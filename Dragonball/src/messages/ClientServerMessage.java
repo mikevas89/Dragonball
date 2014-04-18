@@ -18,8 +18,8 @@ public class ClientServerMessage extends Message implements Serializable{
 		super();
 	}
 	
-	public ClientServerMessage(MessageType messageRequest, String sender,String senderIP,String receiver){
-		super(messageRequest,sender,senderIP,receiver);
+	public ClientServerMessage(MessageType messageRequest, String sender,String senderIP,String receiver,String receiverIP){
+		super(messageRequest,sender,senderIP,receiver,receiverIP);
 	}
 
 	public Unit getMessageUnit() {

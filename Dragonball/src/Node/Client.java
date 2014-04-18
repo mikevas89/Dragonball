@@ -17,13 +17,10 @@ import java.rmi.registry.Registry;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.node.Communication;
-import com.talkinterf.Node;
-
 import structInfo.Constants;
 import units.Player;
 import units.Unit;
-import communication.ClientCommunication;
+import communication.ClientRMI;
 import messages.ClientServerMessage;
 import messages.MessageType;
 
@@ -52,7 +49,7 @@ public class Client extends Node{
 	Timer serverTimeoutTimer;
 
 	private static final long serialVersionUID = 1L;
-	private int clientID; //unique ID returned from Server
+	private int unitID; //unique ID returned from Server
 	private BattleField battlefield;
 
 
@@ -79,15 +76,27 @@ public class Client extends Node{
 
 			@Override
 			public void run() {
-				client.setName("dante");
-				ClientCommunication commClient = null;
+				client.setName("danteClient");
+				InetAddress clientIP = null;
 				try {
-					commClient = new ClientCommunication(client);
+					clientIP = InetAddress.getLocalHost();
+				} catch (UnknownHostException e) {
+					e.printStackTrace();
+				}
+				
+				client.setIP(clientIP.getHostAddress());
+				ClientRMI commClient = null;
+				try {
+					commClient = new ClientRMI(client);
 				} catch (RemoteException e) {
 					e.printStackTrace();
 				}
-				client.createClientReg(client, commClient);
+				//client.createClientReg(client, commClient);
 				
+				if(!Client.createRegistryAndBind(client, commClient))
+						bindInExistingRegistry(client, commClient);
+				
+				//server instance for logging the server for connection
 				Node server=new Server();
 				server.setName("dante");
 				
@@ -100,10 +109,12 @@ public class Client extends Node{
 				server.setIP(IP.getHostAddress());
 				System.out.println(server.getIP());
 				
+				//setup connection to server registry
 				ClientServer serverComm;
 				serverComm = client.getServerReg(server);
 
-				client.setServerConnected(server);  //mentions to which server is connected
+				 //mentions to which server is connected
+				client.setServerConnected(server); 
 				
 				//TODO: constants server names
 				//TODO: build message
@@ -111,8 +122,19 @@ public class Client extends Node{
 				
 				//TODO: while loop for making moves
 				
-				ClientServerMessage message= new messages.ClientServerMessage();
+				ClientServerMessage subscribeMessage= new ClientServerMessage(
+												MessageType.Subscribe2Server,
+												client.getName(),
+												client.getIP(),
+												server.getName(),
+												server.getIP());
 				
+				try {
+					serverComm.onMessageReceived(subscribeMessage);
+				} catch (RemoteException | NotBoundException e) {
+					e.printStackTrace();
+				}
+				/*
 				Player unitTest= new Player(1,1);
 				message.setMessageUnit(unitTest);
 				
@@ -123,8 +145,9 @@ public class Client extends Node{
 				} catch (NotBoundException e) {
 					e.printStackTrace();
 				}
-				
-				
+				*/
+				System.out.println("Client Done");
+
 			}
 
 		});
@@ -135,12 +158,14 @@ public class Client extends Node{
 	
 	
 	
-	public static boolean bindInExistingRegistry(Node node, Communication comm)
+	public static boolean bindInExistingRegistry(Node node, ClientRMI comm)
 	{
+		System.out.println("bindInExistingRegistry");
 		Registry myRegistry;
 		try {
 			myRegistry = LocateRegistry.getRegistry(Constants.RMI_PORT);
 			myRegistry.bind(node.getName(), comm); // bind with their names
+			System.out.println("bindInExistingRegistry completed");
 			return true;
 		} catch (RemoteException e) {
 			return false;
@@ -149,15 +174,18 @@ public class Client extends Node{
 		}
 	}
 	
-	public static boolean createRegistryAndBind(Node node, Communication comm)
+	public static boolean createRegistryAndBind(Node node, ClientRMI comm)
 	{
+		System.out.println("createRegistryAndBind");
 		Registry myRegistry;
 		try {
 			myRegistry = LocateRegistry.createRegistry(Constants.RMI_PORT);
 			myRegistry.rebind(node.getName(), comm); // server's name
+			System.out.println("createRegistryAndBind completed");
 			return true;
 		} catch (RemoteException e) {
-			e.printStackTrace();
+			System.out.println("createRegistryAndBind failed");
+			//e.printStackTrace();
 			return false;
 		}
 	}
@@ -171,7 +199,7 @@ public class Client extends Node{
 	*/
 	
 	//create client Registry
-	public void createClientReg(Node node, ClientCommunication comm){  //server creates its Registry entry
+	public void createClientReg(Node node, ClientRMI comm){  //server creates its Registry entry
 		
 		Registry clientRegistry = null;
 		try {
@@ -209,7 +237,7 @@ public class Client extends Node{
 			e.printStackTrace();
 		}		//getClientInfo returns from ClientList
 																//clientIp and clientName
-		System.out.println("Connecting to "+server.getName());
+		System.out.println("Getting Registry from  "+server.getName());
 		//TODO: if connection error appears (throws exception), then connect to other server 
 		
 		return serverCommunication;
@@ -227,7 +255,8 @@ public class Client extends Node{
 											MessageType.ClientServerPing,
 											this.getName(),
 											this.getIP(),
-											this.serverConnected.getName());
+											this.serverConnected.getName(),
+											this.serverConnected.getIP());
 		//send the subscription message to the server
 		ClientServer serverComm = null;
 		serverComm = this.getServerReg(this.serverConnected);
@@ -246,7 +275,8 @@ public class Client extends Node{
 												MessageType.Subscribe2Server,
 												this.getName(),
 												this.getIP(),
-												this.serverConnected.getName());
+												this.serverConnected.getName(),
+												this.serverConnected.getIP());
 		
 		//send the subscription message to the server
 		ClientServer serverComm= this.getServerReg(this.serverConnected);
@@ -259,8 +289,9 @@ public class Client extends Node{
 												MessageType.UnSubscribeFromServer,
 												this.getName(),
 												this.getIP(),
-												this.serverConnected.getName());
-		unSubscribeMessage.setContent("clientID", String.valueOf(this.getClientID()));
+												this.serverConnected.getName(),
+												this.serverConnected.getIP());
+		unSubscribeMessage.setContent("unitID", String.valueOf(this.getUnitID()));
 		//client unsubscribes himself
 		this.isSubscribed=false;
 		//send the subscription message to the server
@@ -277,7 +308,8 @@ public class Client extends Node{
 												MessageType.Action,
 												this.getName(),
 												this.getIP(),
-												this.serverConnected.getName());
+												this.serverConnected.getName(),
+												this.serverConnected.getIP());
 		moveUnitMessage.setMessageUnit(unit);
 		
 		//send the subscription message to the server
@@ -292,9 +324,10 @@ public class Client extends Node{
 													MessageType.GetBattlefield,
 													this.getName(),
 													this.getIP(),
-													this.serverConnected.getName());
+													this.serverConnected.getName(),
+													this.serverConnected.getIP());
 
-		getBattlefieldMessage.setContent("clientID", String.valueOf(this.getClientID()));
+		getBattlefieldMessage.setContent("unitID", String.valueOf(this.getUnitID()));
 		
 		//send the subscription message to the server
 		ClientServer serverComm= this.getServerReg(this.serverConnected);
@@ -309,11 +342,14 @@ public class Client extends Node{
 	
 	//after the Ack of the subscribe message, the server sends the updates of the battlefield
 	public void onSubscribeMessageReceived(ClientServerMessage message){
+		
 		if(message.getSender().equals(this.serverConnected.getName())){
 			System.out.println("Connection Established from the Server - Subscription Completed");
 			//content collection of the message contains the unique clientID
-			this.setClientID(Integer.parseInt(message.getContent().get("clientID")));
+			this.setUnitID(Integer.parseInt(message.getContent().get("unitID")));
+			System.out.println("Client: Received unitID "+ this.getUnitID());
 			this.isSubscribed=true;
+			
 			//set timers, sets a timer for sending the Ping
 			serverTimeoutTimer = new Timer(true);
 			serverTimeoutTimer.scheduleAtFixedRate(new SchedulingTimer(),0,1000); 
@@ -365,13 +401,13 @@ public class Client extends Node{
 	----------------------------------------------------		
 	 */
 
-	public int getClientID() {
-		return this.clientID;
+	public int getUnitID() {
+		return this.unitID;
 		
 	}
 	
-	public void setClientID(int clientID) {
-		this.clientID=clientID;
+	public void setUnitID(int unitID) {
+		this.unitID=unitID;
 		
 	}
 	

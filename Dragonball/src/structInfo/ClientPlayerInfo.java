@@ -6,24 +6,14 @@ import Node.Node;
 
 public class ClientPlayerInfo extends Node{
 
-	private int unitID; //unit ID of the client
+	private static int unitID=0; //unit ID of the client
 
 	private long TimeLastPingSent; //time that the client sent his last ClientServerPing	
 	
 	
-	public int getUnitID() {
-		return unitID;
-	}
-
-	public void setUnitID(int unitID) {
-		this.unitID = unitID;
-	}
-
-	
-	
 	public ClientPlayerInfo(String Name, String IP){
 		super(Name,IP);
-		this.unitID=-1;//default
+		this.unitID++;//default
 		this.setTimeLastPingSent(0); //default
 		
 	}
@@ -34,6 +24,18 @@ public class ClientPlayerInfo extends Node{
             		&& this.getUnitID()==info.getUnitID());
         }
 
+    
+    
+    
+	public int getUnitID() {
+		return unitID;
+	}
+
+	public void setUnitID(int unitID) {
+		this.unitID = unitID;
+	}
+
+    
 	public long getTimeLastPingSent() {
 		return TimeLastPingSent;
 	}

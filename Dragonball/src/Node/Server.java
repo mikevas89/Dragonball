@@ -11,16 +11,20 @@ import java.io.IOException;
 import java.rmi.AccessException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 
 import structInfo.ClientPlayerInfo;
+import structInfo.Constants;
 import structInfo.LogInfo;
 import structInfo.ServerInfo;
 import units.Unit;
 import Node.Node;
-import communication.Server2ClientCommunication;
+import communication.ClientRMI;
+import communication.Server2ClientRMI;
 
 public class Server extends Node implements java.io.Serializable{
 	
@@ -37,6 +41,8 @@ public class Server extends Node implements java.io.Serializable{
 	
 	private static BattleField battlefield; 
 	private HashMap<String,LogInfo> PendingActions;
+	
+	public volatile boolean killServer = false;
 	
 
 	private ArrayList<LogInfo> ValidActions;
@@ -66,20 +72,16 @@ public class Server extends Node implements java.io.Serializable{
 		    	Server server=new Server();
 		 		server.setName("dante"); //pc name
 		 		
-		 	/*	Server2ClientCommunication serverComm = null;
+		 		//Server RMI for Client communication
+		 		Server2ClientRMI serverComm = null;
 				try {
-					serverComm = new Server2ClientCommunication(server);
+					serverComm = new Server2ClientRMI(server);
 				} catch (RemoteException e1) {
 					e1.printStackTrace();
 				}
+				server.createServerReg(server,serverComm);
 
-		 		try {
-					serverComm.createServerReg();
-				} catch (RemoteException
-						| AlreadyBoundException e1) {
-					e1.printStackTrace();
-				}
-		 		*/
+		 		
 		 		
 		 		battlefield = BattleField.getBattleField();
 		 		
@@ -132,11 +134,11 @@ public class Server extends Node implements java.io.Serializable{
 				----------------------------------------------------		
 				*/
 				int i=0;
-				while(true)
+				while(!server.killServer)
 				{
 					System.out.println("Server is running...");
 					try {
-						Thread.sleep(5000);
+						Thread.sleep(10000);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -178,6 +180,29 @@ public class Server extends Node implements java.io.Serializable{
 	}
 
 	
+	/*---------------------------------------------------
+	 * ESTABLISH SERVER RMI REGISTRY
+	 ----------------------------------------------------		
+	*/
+	
+	public void createServerReg(Node node, Server2ClientRMI comm) {  //server creates its Registry entry
+		
+		Registry serverRegistry = null;
+		try {
+			serverRegistry = LocateRegistry.createRegistry(Constants.RMI_PORT);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		try {
+			serverRegistry.bind(this.getName(), comm );
+		} catch (RemoteException | AlreadyBoundException e) {
+			e.printStackTrace();
+		} //server's name
+		System.out.println(this.getName()+ " is up and running!");
+	}
+	
+
+	
 	/*----------------------------------------------------
 				GETTERS AND SETTERS
 	 ----------------------------------------------------		
@@ -187,10 +212,12 @@ public class Server extends Node implements java.io.Serializable{
 		return clientList;
 	}
 
-	public synchronized void setClientList(ClientPlayerInfo clientPlayerInfo) {
+	public synchronized void putToClientList(ClientPlayerInfo clientPlayerInfo) {
 		Node node = new Node(clientPlayerInfo.getName(),
 											clientPlayerInfo.getIP());
 		this.getClientList().put(node, clientPlayerInfo);
+		System.out.println("Server: adding new Client: unitID="+ clientPlayerInfo.getUnitID()+
+								"clientIP= "+ clientPlayerInfo.getIP());
 	}
 	
 	public synchronized Unit getBattlefieldUnit(int x, int y)

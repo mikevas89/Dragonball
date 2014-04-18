@@ -5,29 +5,33 @@ import interfaces.ClientServer;
 
 
 
+
 import java.net.MalformedURLException;
 import java.rmi.AccessException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-import Node.Node;
-import communication.ClientPlayerInfo;
+import messages.ClientServerMessage;
+import messages.Message;
+import messages.MessageType;
 
 import Node.Node;
+
 import Node.Server;
 
-import units.Unit;
+import structInfo.ClientPlayerInfo;
+import structInfo.Constants;
 
 
 
 
-public class Server2ClientCommunication extends UnicastRemoteObject implements ClientServer { //implements 
+
+public class Server2ClientRMI extends UnicastRemoteObject implements ClientServer { //implements 
 																						//Server2Server
 
 	private static final long serialVersionUID = 1L;
@@ -35,7 +39,7 @@ public class Server2ClientCommunication extends UnicastRemoteObject implements C
 	private Server serverOwner; //server instance of this communication
 	
 
-	public Server2ClientCommunication(Server server) throws RemoteException {
+	public Server2ClientRMI(Server server) throws RemoteException {
 		this.serverOwner=server;
 	}
 
@@ -44,6 +48,8 @@ public class Server2ClientCommunication extends UnicastRemoteObject implements C
 		//if the message is not a proper ClientServerMessage, it is discarded
 		if(!(message instanceof ClientServerMessage)) return;
 		ClientServerMessage clientServerMessage= (ClientServerMessage) message;
+		
+		System.out.println("Server: Received Message");
 		
 		switch(message.getMessageTypeRequest()){
 		case ClientServerPing : 
@@ -55,7 +61,7 @@ public class Server2ClientCommunication extends UnicastRemoteObject implements C
 		case UnSubscribeFromServer :
 			onUnSubscribeFromServerMessageReceived(clientServerMessage);
 			break;
-		case MoveUnit : 
+		case Action : 
 			onMoveUnitMessageReceived(clientServerMessage);
 			break;
 		case GetBattlefield :
@@ -71,18 +77,6 @@ public class Server2ClientCommunication extends UnicastRemoteObject implements C
 	}
 	
 	
-	/*---------------------------------------------------
-	 * ESTABLISH SERVER RMI REGISTRY
-	 ----------------------------------------------------		
-	*/
-	
-	public void createServerReg() throws AccessException, RemoteException, AlreadyBoundException{  //server creates its Registry entry
-		
-		Registry serverRegistry = LocateRegistry.createRegistry(Constants.RMI_PORT);
-		serverRegistry.bind(serverOwner.getName(), this ); //server's name
-		System.out.println(serverOwner.getName()+ " is up and running!");
-	}
-	
 	
 	
 	public ClientServer getClientReg(Node client) throws MalformedURLException, RemoteException, NotBoundException
@@ -91,7 +85,7 @@ public class Server2ClientCommunication extends UnicastRemoteObject implements C
 		Naming.lookup("rmi://"+client.getIP()
 				+"/"+client.getName());		//getClientInfo returns from ClientList
 																//clientIp and clientName
-		System.out.println(client.getName());
+		System.out.println("Getting Registry from "+ client.getName());
 		return clientCommunication;
 	}
 	
@@ -113,6 +107,7 @@ public class Server2ClientCommunication extends UnicastRemoteObject implements C
 	*/
 	
 	private void onClientServerPingMessageReceived(Message message) {
+		System.out.println("onClientServerPingMessageReceived");
 		Node client=new Node(message.getSender(),message.getSenderIP());
 		ClientPlayerInfo result = this.serverOwner.getClientList().get(client);
 		if(result==null) return; //client is not player in my database
@@ -122,23 +117,46 @@ public class Server2ClientCommunication extends UnicastRemoteObject implements C
 	}
 	
 	public void onSubscribe2ServerMessageReceived(Message message){
+		
+		System.out.println("Server: onSubscribe2ServerMessageReceived");
+		
 		Node client=new Node(message.getSender(),message.getSenderIP());
+		//checking if client is already subscribed
 		if(this.serverOwner.getClientList().containsKey(client)){
 			System.err.println("Client: "+ message.getSender() +" tries to resubscribe");
 			return;
 		}
-		//TODO put "Make new Player" to the Queue sharing with MasterPlayer so the Master Player can see it
-		//TODO the OK for the subscription should be sent from the MasterPlayer
-		/*	With this message, MasterPlayer sends the OK subscription to the client
-		 * ClientServerMessage Subscribe2Server = new ClientServerMessage(
+		
+		//put new Client to the clientList
+		ClientPlayerInfo newClient = new ClientPlayerInfo(client.getName(), client.getIP());
+		this.serverOwner.putToClientList(newClient);
+		
+		
+			//With this message, Server sends the OK subscription to the client
+		 ClientServerMessage sendSubscribed = new ClientServerMessage(
 												MessageType.Subscribe2Server,
 												this.serverOwner.getName(),
 												this.serverOwner.getIP(),
-												client.getName());
-		//put it to the clientList
-		ClientPlayerInfo result = this.serverOwner.getClientList().get(client);
+												client.getName(),
+												client.getIP());
+		 
+		 sendSubscribed.setContent("unitID", String.valueOf(newClient.getUnitID()));
+		 //sending the ACK message to subscribed client
+		 ClientServer clientRMI=null;
+		try {
+			clientRMI = this.getClientReg(client);
+		} catch (MalformedURLException | RemoteException | NotBoundException e) {
+			e.printStackTrace();
+		}
 		
-		*/
+		try {
+			clientRMI.onMessageReceived(sendSubscribed);
+		} catch (RemoteException | NotBoundException e) {
+			e.printStackTrace();
+		}
+		
+		System.out.println("Server: ACK sent to Client"+ client.getName()+ "unitID: "+ newClient.getUnitID());
+		 
 	}
 	
 	private void onUnSubscribeFromServerMessageReceived(ClientServerMessage message) {
@@ -173,7 +191,8 @@ public class Server2ClientCommunication extends UnicastRemoteObject implements C
 					MessageType.GetBattlefield,
 					this.serverOwner.getName(),
 					this.serverOwner.getIP(),
-					client.getName());
+					client.getName(),
+					client.getIP());
 		sendBattleFieldMessage.setBattlefield(Server.getBattlefield());
 		//send the BattleField to the client
 		ClientServer clientComm= this.getClientReg(new Node(player.getName(),player.getIP()));

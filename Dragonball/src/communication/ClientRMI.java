@@ -16,7 +16,7 @@ import Node.Client;
 
 
 //this is the implementation of RMI for the client side
-public class ClientCommunication extends UnicastRemoteObject implements ClientServer { 
+public class ClientRMI extends UnicastRemoteObject implements ClientServer { 
 	
 	
 	private static final long serialVersionUID = 1L;
@@ -30,7 +30,7 @@ public class ClientCommunication extends UnicastRemoteObject implements ClientSe
 	private static Client clientOwner;
 
 
-	public ClientCommunication(Client client) throws RemoteException {
+	public ClientRMI(Client client) throws RemoteException {
 		super();
 		clientOwner=client;
 	}

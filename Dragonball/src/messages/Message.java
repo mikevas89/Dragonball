@@ -11,6 +11,7 @@ public class Message implements java.io.Serializable{
 	private String sender;
 	private String senderIP;
 	private String receiver;
+	private String receiverIP;
 	private static int messageId=0; //increments at every instantiation
 	
 	private HashMap<String,String> content;
@@ -20,13 +21,14 @@ public class Message implements java.io.Serializable{
 		content= new HashMap<String,String>();
 	}
 	
-	public Message (MessageType messageRequest, String sender,String senderIP, String receiver) {
+	public Message (MessageType messageRequest, String sender,String senderIP, String receiver,String receiverIP) {
 		messageId++;
 		content= new HashMap<String,String>();
 		this.setMessageTypeRequest(messageRequest);
 		this.setSender(sender);
 		this.setSenderIP(senderIP);
 		this.setReceiver(receiver);
+		this.setReceiverIP(receiverIP);
 		
 	}
 	
@@ -66,6 +68,14 @@ public class Message implements java.io.Serializable{
 
 	public void setReceiver(String receiver) {
 		this.receiver = receiver;
+	}
+
+	public String getReceiverIP() {
+		return receiverIP;
+	}
+
+	public void setReceiverIP(String receiverIP) {
+		this.receiverIP = receiverIP;
 	}
 
 	public int getMessageId() {
