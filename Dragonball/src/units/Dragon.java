@@ -7,6 +7,12 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
+
+
+import structInfo.Constants;
+import structInfo.Directions;
+import structInfo.UnitType;
+
 /**
  * A dragon is a non-playing character, which can't
  * move, has a hitpoint range between 50 and 100
@@ -65,7 +71,7 @@ public class Dragon extends Unit implements Serializable, Callable {
 	 */
 	@SuppressWarnings("static-access")
 	public String call() {
-		ArrayList <Direction> adjacentPlayers = new ArrayList<Direction> ();
+		ArrayList <Directions> adjacentPlayers = new ArrayList<Directions> ();
 		
 		this.running = true;
 		int turn=0;
@@ -73,10 +79,10 @@ public class Dragon extends Unit implements Serializable, Callable {
 		while(GameState.getRunningState() && this.running) {
 			try {
 				// Sleep while the dragon is considering its next move 
-				Thread.currentThread().sleep((int)(timeBetweenTurns * 500 * GameState.GAME_SPEED));
+				Thread.currentThread().sleep((int)(Constants.CLIENT_PERIOD_ACTION));
 				turn++;
-				if(turn==30)
-					//break;
+				if(turn==5)
+					break;
 
 				// Stop if the dragon runs out of hitpoints 
 				if (getHitPoints() <= 0)
@@ -84,35 +90,35 @@ public class Dragon extends Unit implements Serializable, Callable {
 				// Decide what players are near
 				if (getY() > 0)
 					if ( getType( getX(), getY() - 1 ) == UnitType.player )
-						adjacentPlayers.add(Direction.up);
+						adjacentPlayers.add(Directions.up);
 				if (getY() < BattleField.MAP_WIDTH - 1)
 					if ( getType( getX(), getY() + 1 ) == UnitType.player )
-						adjacentPlayers.add(Direction.down);
+						adjacentPlayers.add(Directions.down);
 				if (getX() > 0)
 					if ( getType( getX() - 1, getY() ) == UnitType.player )
-						adjacentPlayers.add(Direction.left);
+						adjacentPlayers.add(Directions.left);
 				if (getX() < BattleField.MAP_WIDTH - 1)
 					if ( getType( getX() + 1, getY() ) == UnitType.player )
-						adjacentPlayers.add(Direction.right);
+						adjacentPlayers.add(Directions.right);
 				
 				// Pick a random player to attack
 				if (adjacentPlayers.size() == 0)
 					continue; // There are no players to attack
-				Direction playerToAttack = adjacentPlayers.get( (int)(Math.random() * adjacentPlayers.size()) );
+				Directions playerToAttack = adjacentPlayers.get( (int)(Math.random() * adjacentPlayers.size()) );
 				
 				// Attack the player
 				switch (playerToAttack) {
 					case up:
-						this.dealDamage( getX(), getY() - 1, this.getAttackPoints() );
+						this.battlefield.dealDamage( getX(), getY() - 1, this.getAttackPoints() );
 						break;
 					case right:
-						this.dealDamage( getX() + 1, getY(), this.getAttackPoints() );
+						this.battlefield.dealDamage( getX() + 1, getY(), this.getAttackPoints() );
 						break;
 					case down:
-						this.dealDamage( getX(), getY() + 1, this.getAttackPoints() );
+						this.battlefield.dealDamage( getX(), getY() + 1, this.getAttackPoints() );
 						break;
 					case left:
-						this.dealDamage( getX() - 1, getY(), this.getAttackPoints() );
+						this.battlefield.dealDamage( getX() - 1, getY(), this.getAttackPoints() );
 						break;
 				}
 				

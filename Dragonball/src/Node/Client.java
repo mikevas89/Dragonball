@@ -19,9 +19,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import structInfo.Constants;
-import units.Dragon;
-import units.Player;
-import units.Unit;
+import structInfo.Directions;
+import structInfo.UnitType;
+import units.*;
 import communication.ClientRMI;
 import messages.ClientServerMessage;
 import messages.MessageType;
@@ -49,6 +49,7 @@ public class Client extends Node{
 	
 	
 	Timer serverTimeoutTimer;
+	volatile boolean running=true;
 
 	private static final long serialVersionUID = 1L;
 	private int unitID; //unique ID returned from Server
@@ -78,6 +79,12 @@ public class Client extends Node{
 
 			@Override
 			public void run() {
+				
+				Directions direction;
+				UnitType adjacentUnitType;
+				int targetX = 0, targetY = 0;
+				
+				
 				Client client = new Client();
 				client.setName("danteClient");
 				
@@ -129,7 +136,7 @@ public class Client extends Node{
 				//TODO: build message
 
 				
-				//TODO: while loop for making moves
+				
 				
 				ClientServerMessage subscribeMessage= new ClientServerMessage(
 												MessageType.Subscribe2Server,
@@ -159,9 +166,73 @@ public class Client extends Node{
 
 				
 				System.out.println("Client is waiting");
-				while(true){
+				while(client.running){
 					try {
-						Thread.sleep(10000);
+						
+						Thread.sleep(Constants.CLIENT_PERIOD_ACTION);
+						
+						// Randomly choose one of the four wind directions to move to if there are no units present
+						direction = Directions.values()[ (int)(Directions.values().length * Math.random()) ];
+						adjacentUnitType = UnitType.undefined;
+
+						Unit myUnit= client.getUnitFromList();
+						if(myUnit == null)
+						{
+							System.err.println("Client: Cannot find my player");
+							client.running=false;
+							continue;
+						}
+						
+						switch (direction) {
+							case up:
+								if (myUnit.getY() <= 0)
+									// The player was at the edge of the map, so he can't move north and there are no units there
+									continue;
+								
+								targetX = myUnit.getX();
+								targetY = myUnit.getY() - 1;
+								break;
+							case down:
+								if (myUnit.getY() >= BattleField.MAP_HEIGHT - 1)
+									// The player was at the edge of the map, so he can't move south and there are no units there
+									continue;
+
+								targetX = myUnit.getX();
+								targetY = myUnit.getY() + 1;
+								break;
+							case left:
+								if (myUnit.getX() <= 0)
+									// The player was at the edge of the map, so he can't move west and there are no units there
+									continue;
+
+								targetX = myUnit.getX() - 1;
+								targetY = myUnit.getY();
+								break;
+							case right:
+								if (myUnit.getX() >= BattleField.MAP_WIDTH - 1)
+									// The player was at the edge of the map, so he can't move east and there are no units there
+									continue;
+
+								targetX = myUnit.getX() + 1;
+								targetY = myUnit.getY();
+								break;
+						}
+						
+						ClientServerMessage actionMessage = new ClientServerMessage(
+								MessageType.Action, client.getName(),
+								client.getIP(), server.getName(), server
+										.getIP());
+						actionMessage.setContent("UnitID", String.valueOf(client.getUnitID()));
+						actionMessage.setContent("x", String.valueOf(targetX));
+						actionMessage.setContent("y", String.valueOf(targetY));
+
+
+						try {
+							serverComm.onMessageReceived(actionMessage);
+						} catch (RemoteException | NotBoundException e) {
+							e.printStackTrace();
+						}
+
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -175,6 +246,19 @@ public class Client extends Node{
 
 	}
 	
+	public Unit getUnitFromList()
+	{
+		for(Unit temp: battlefield.getUnits())
+		{
+			if(temp.getUnitID()==this.getUnitID())
+			{
+				return temp;
+			}
+		}
+		return null;
+		
+		
+	}
 	
 	
 	public static boolean bindInExistingRegistry(Node node, ClientRMI comm)

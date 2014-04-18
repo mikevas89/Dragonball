@@ -6,6 +6,8 @@ import interfaces.ClientServer;
 
 
 
+
+
 import java.net.MalformedURLException;
 import java.rmi.AccessException;
 import java.rmi.AlreadyBoundException;
@@ -19,13 +21,12 @@ import java.rmi.server.UnicastRemoteObject;
 import messages.ClientServerMessage;
 import messages.Message;
 import messages.MessageType;
-
 import Node.Node;
-
 import Node.Server;
-
 import structInfo.ClientPlayerInfo;
 import structInfo.Constants;
+import structInfo.UnitType;
+import units.Unit;
 
 
 
@@ -62,7 +63,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 			onUnSubscribeFromServerMessageReceived(clientServerMessage);
 			break;
 		case Action : 
-			onMoveUnitMessageReceived(clientServerMessage);
+			onActionMessageReceived(clientServerMessage);
 			break;
 		case GetBattlefield :
 			try {
@@ -177,14 +178,45 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		//TODO put "Remove new Player" to the Queue sharing with MP so the Master Player can see it
 	}
 	
-	private void onMoveUnitMessageReceived(ClientServerMessage message) {
+	private void onActionMessageReceived(ClientServerMessage message) {
+		System.out.println("Server: onActionMessageReceived");
 		Node client=new Node(message.getSender(),message.getSenderIP());
-		ClientPlayerInfo player= this.serverOwner.getClientList().get((client));
-		if(player==null){
-			System.err.println("Unknown Client: "+ message.getSender() +" tries to moveUnit");
-			return;
-		}	
-		//TODO put "Move Unit Player" with id <- player.getUnitID() to the Queue sharing with Server
+		Unit senderUnit = null;
+		int unitID=Integer.parseInt(message.getContent().get("UnitID"));
+		int x=Integer.parseInt(message.getContent().get("x"));
+		int y=Integer.parseInt(message.getContent().get("y"));
+		
+		for(Unit temp : Server.getBattlefield().getUnits())
+		{
+			if(temp.getUnitID()==unitID)
+			{
+				senderUnit=temp;
+				break;
+			}
+		}
+		
+		// Get what unit lies in the target square
+		Unit targetUnit = Server.getBattlefield().getUnit(x, y);
+		UnitType adjacentUnitType;
+		if(targetUnit==null)
+			adjacentUnitType = UnitType.undefined;
+		else
+			adjacentUnitType = targetUnit.getType(x, y);
+		
+		switch (adjacentUnitType) {
+			case undefined:
+				// There is no unit in the square. Move the player to this square
+				Server.getBattlefield().moveUnit(senderUnit, x, y);
+				break;
+			case player:
+				// There is a player in the square, attempt a healing
+				Server.getBattlefield().healDamage(x, y, senderUnit.getAttackPoints());
+				break;
+			case dragon:
+				// There is a dragon in the square, attempt a dragon slaying
+				Server.getBattlefield().dealDamage(x, y, senderUnit.getAttackPoints());
+				break;
+		}
 	}
 	
 

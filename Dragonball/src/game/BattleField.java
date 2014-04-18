@@ -3,10 +3,10 @@ package game;
 import java.util.ArrayList;
 
 
+
 import units.Dragon;
 import units.Player;
 import units.Unit;
-import units.Unit.UnitType;
 
 /**
  * The actual battlefield where the fighting takes place.
@@ -143,7 +143,7 @@ public class BattleField  implements java.io.Serializable{
 	 * 
 	 * @return true on success.
 	 */
-	private synchronized boolean moveUnit(Unit unit, int newX, int newY)
+	public synchronized boolean moveUnit(Unit unit, int newX, int newY)
 	{
 		int originalX = unit.getX();
 		int originalY = unit.getY();
@@ -316,6 +316,19 @@ public class BattleField  implements java.io.Serializable{
 	
 	public ArrayList<Unit> getUnits(){
 		return this.units;
+	}
+	
+	public void healDamage(int x, int y, int healPoints)
+	{
+		BattleField.getBattleField().getUnit(x, y).adjustHitPoints(healPoints);
+	}
+	
+	public void dealDamage(int x, int y, int damage) 
+	{
+		Unit unit;
+		unit = BattleField.getBattleField().getUnit(x, y);
+		if (unit != null)
+			unit.adjustHitPoints( -(Integer)damage );
 	}
 	
 }

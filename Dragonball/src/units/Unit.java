@@ -7,6 +7,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+import structInfo.UnitType;
+
 
 
 
@@ -56,14 +58,7 @@ public abstract class Unit implements Serializable {
 	 * (See stopRunnerThread())
 	 */
 
-	public enum Direction {
-		up, right, down, left
-	};
 	
-	public enum UnitType {
-		player, dragon, undefined,
-	};
-
 	/**
 	 * Create a new unit and specify the 
 	 * number of hitpoints. Units hitpoints
@@ -197,7 +192,7 @@ public abstract class Unit implements Serializable {
 
 	}
 	
-	protected UnitType getType(int x, int y) {
+	public UnitType getType(int x, int y) {
 		
 		if (getUnit(x, y) instanceof Player)
 			return UnitType.player;
@@ -208,13 +203,7 @@ public abstract class Unit implements Serializable {
 	}
 	
 	
-	public void dealDamage(int x, int y, int damage) 
-	{
-		Unit unit;
-		unit = this.getUnit(x, y);
-		if (unit != null)
-			unit.adjustHitPoints( -(Integer)damage );
-	}
+	
 	
 
 }
