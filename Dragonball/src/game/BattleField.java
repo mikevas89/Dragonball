@@ -18,7 +18,10 @@ import units.Unit.UnitType;
  * 
  * @author Pieter Anemaet, Boaz Pat-El
  */
-public class BattleField  {
+public class BattleField  implements java.io.Serializable{
+
+	private static final long serialVersionUID = 1L;
+
 	/* The array of units */
 	private Unit[][] map;
 
@@ -58,8 +61,10 @@ public class BattleField  {
 	 * @return the battlefield.
 	 */
 	public static BattleField getBattleField() {
-		if (battlefield == null)
+		if (battlefield == null){
+			System.err.println("A new Battlefield was created");
 			battlefield = new BattleField(MAP_WIDTH, MAP_HEIGHT);
+		}
 		return battlefield;
 	}
 	
@@ -288,6 +293,29 @@ public class BattleField  {
 		this.map[x][y]= value;
 	}
 	
+	public void printUnitSize(){
+		
+		System.out.println("Battlefield - Num Units "+ this.units.size());
+		for(int i = 0; i < BattleField.MAP_WIDTH; i++)
+			for(int j = 0; j < BattleField.MAP_HEIGHT; j++) {
+				if(this.map[i][j] == null) continue;
+				System.out.println("Unit x:"+ this.getUnit(i, j).getX() + " y: "+ this.map[i][j].getY() );
+			}
+	}
 	
+	public void copyMap(Unit[][] messageUnits){
+		this.map = messageUnits.clone();
+	}
+	public void copyListUnits(ArrayList<Unit> listUnits){
+		this.units= (ArrayList<Unit>) listUnits.clone();
+	}
+	
+	public Unit[][] getMap(){
+		return this.map;
+	}
+	
+	public ArrayList<Unit> getUnits(){
+		return this.units;
+	}
 	
 }

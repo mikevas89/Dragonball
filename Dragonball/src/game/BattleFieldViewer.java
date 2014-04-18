@@ -13,6 +13,8 @@ import java.awt.event.WindowListener;
 
 import javax.swing.JPanel;
 
+import Node.Server;
+
 import units.Dragon;
 import units.Player;
 import units.Unit;
@@ -34,6 +36,7 @@ public class BattleFieldViewer extends JPanel implements Runnable {
 	/* Dimension of the stored image */
 	private int bufferWidth;
 	private int bufferHeight;
+	private BattleField battlefield;
 
 	/* The thread that is used to make the battlefield run in a separate thread.
 	 * We need to remember this thread to make sure that Java exits cleanly.
@@ -45,7 +48,10 @@ public class BattleFieldViewer extends JPanel implements Runnable {
 	 * Create a battlefield viewer in 
 	 * a new thread. 
 	 */
-	public BattleFieldViewer() {
+	public BattleFieldViewer(BattleField battlefield) {
+		this.battlefield = battlefield;
+		System.out.println("BattleFiledViewer: BattleField size into Viewer");
+		this.battlefield.printUnitSize();
 		doubleBufferGraphics = null;
 		runnerThread = new Thread(this);
 		runnerThread.start();
@@ -71,7 +77,7 @@ public class BattleFieldViewer extends JPanel implements Runnable {
 		double xRatio = (double)this.getWidth() / (double)BattleField.MAP_WIDTH;
 		double yRatio = (double)this.getHeight() / (double)BattleField.MAP_HEIGHT;
 		double filler;
-		BattleField bf = BattleField.getBattleField();
+		BattleField bf = this.battlefield;
 
 		/* Possibly adjust the double buffer */
 		if(bufferWidth != getSize().width 
@@ -89,8 +95,10 @@ public class BattleFieldViewer extends JPanel implements Runnable {
 		for(int i = 0; i < BattleField.MAP_WIDTH; i++, x += xRatio, y = 0)
 			for(int j = 0; j < BattleField.MAP_HEIGHT; j++, y += yRatio) {
 				u = bf.getUnit(i, j);
+				//bf.printUnitSize();
 				if (u == null) continue; // Nothing to draw in this sector
 
+				//System.out.println("Viewer: Mpla Mpla2");
 				if (u instanceof Dragon)
 					doubleBufferGraphics.setColor(Color.RED);
 				else if (u instanceof Player)

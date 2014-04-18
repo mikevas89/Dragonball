@@ -1,6 +1,7 @@
 package Node;
 
 import game.BattleField;
+import game.BattleFieldViewer;
 
 import interfaces.ClientServer;
 
@@ -18,6 +19,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import structInfo.Constants;
+import units.Dragon;
 import units.Player;
 import units.Unit;
 import communication.ClientRMI;
@@ -50,7 +52,7 @@ public class Client extends Node{
 
 	private static final long serialVersionUID = 1L;
 	private int unitID; //unique ID returned from Server
-	private BattleField battlefield;
+	private static  BattleField battlefield;
 
 
 	public Client(){
@@ -70,13 +72,20 @@ public class Client extends Node{
 	 */
 	public static void main(String[] args) {
 		
+		battlefield = BattleField.getBattleField();
 		
 		Thread clientThread = new Thread(new Runnable(){
-			Client client = new Client();
 
 			@Override
 			public void run() {
+				Client client = new Client();
 				client.setName("danteClient");
+				
+		 		//battlefield = BattleField.getBattleField();
+				new BattleFieldViewer(battlefield);
+				System.out.println("Client: BattleField size after going to Viewer");
+				Client.getBattleField().printUnitSize();
+				
 				InetAddress clientIP = null;
 				try {
 					clientIP = InetAddress.getLocalHost();
@@ -146,7 +155,17 @@ public class Client extends Node{
 					e.printStackTrace();
 				}
 				*/
-				System.out.println("Client Done");
+				
+
+				
+				System.out.println("Client is waiting");
+				while(true){
+					try {
+						Thread.sleep(10000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
 
 			}
 
@@ -352,7 +371,7 @@ public class Client extends Node{
 			
 			//set timers, sets a timer for sending the Ping
 			serverTimeoutTimer = new Timer(true);
-			serverTimeoutTimer.scheduleAtFixedRate(new SchedulingTimer(),0,1000); 
+			serverTimeoutTimer.scheduleAtFixedRate(new SchedulingTimer(),0,30000); 
 		}	
 	}
 	
@@ -360,8 +379,7 @@ public class Client extends Node{
 		if(message.getSender().equals(this.serverConnected.getName())){
 			System.out.println("BattleFiled updated from the Server");
 			//update the battlefield of the subscribed client
-			//TODO: observable??
-			this.setBattleField(message.getBattlefield());
+			this.recomputeBattleField(message.getBattlefield());
 		}
 	}
 	
@@ -396,6 +414,12 @@ public class Client extends Node{
 		}		
 	}
 	
+	private void recomputeBattleField(BattleField messageBattleField){
+		battlefield.copyListUnits(messageBattleField.getUnits());
+		battlefield.copyMap(messageBattleField.getMap());
+
+	}
+	
 	/*----------------------------------------------------
 					GETTERS AND SETTERS
 	----------------------------------------------------		
@@ -411,13 +435,13 @@ public class Client extends Node{
 		
 	}
 	
-	public BattleField getBattleField() {
-		return this.battlefield;
+	public static BattleField getBattleField() {
+		return Client.battlefield;
 	}
 	
 
-	public void setBattleField(BattleField battlefield) {
-		this.battlefield=battlefield;
+	public static void setBattleField(BattleField battlefield) {
+		Client.battlefield=battlefield;
 	}
 	
 	public Node getServerConnected() {

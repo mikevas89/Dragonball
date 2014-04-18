@@ -1,6 +1,7 @@
 package Node;
 
 import game.BattleField;
+
 import game.BattleFieldViewer;
 
 import java.io.BufferedReader;
@@ -8,7 +9,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.rmi.AccessException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -21,9 +21,9 @@ import structInfo.ClientPlayerInfo;
 import structInfo.Constants;
 import structInfo.LogInfo;
 import structInfo.ServerInfo;
+import units.Player;
 import units.Unit;
 import Node.Node;
-import communication.ClientRMI;
 import communication.Server2ClientRMI;
 
 public class Server extends Node implements java.io.Serializable{
@@ -84,6 +84,7 @@ public class Server extends Node implements java.io.Serializable{
 		 		
 		 		
 		 		battlefield = BattleField.getBattleField();
+				new BattleFieldViewer(battlefield);
 		 		
 		 		File file = new File("src/Servers.txt");
 				BufferedReader reader = null;
@@ -127,6 +128,13 @@ public class Server extends Node implements java.io.Serializable{
 				Runnable pendingMonitor = new PendingMonitor(server.getPendingActions(),server.getValidActions());
 				new Thread(pendingMonitor).start();
 				
+				/*----------------------------------------------------
+				  		Thread to update clients about Battlefield periodically
+				----------------------------------------------------		
+				*/
+				Runnable battlefieldSender = new BattlefieldSender(server);
+				new Thread(battlefieldSender).start();
+				
 				
 				
 				/*----------------------------------------------------
@@ -151,6 +159,8 @@ public class Server extends Node implements java.io.Serializable{
 						i++;
 					}
 					
+					
+					
 					for(LogInfo temp: server.getValidActions())
 					{
 						System.out.println("Valid are: "+temp.getSenderIP());
@@ -161,15 +171,6 @@ public class Server extends Node implements java.io.Serializable{
 				    }
 		}).start();
 			
-	
-		/* Spawn a new battlefield viewer */
-		new Thread(new Runnable() {
-			public void run() {
-				new BattleFieldViewer();
-			}
-		}).start();
-		
-		
 	}
 	
 	public void printlist()
@@ -199,6 +200,25 @@ public class Server extends Node implements java.io.Serializable{
 			e.printStackTrace();
 		} //server's name
 		System.out.println(this.getName()+ " is up and running!");
+	}
+	
+	
+	public int createPlayer(){
+		int x,y;
+		int attempt = 0;
+		do {
+			x = (int)(Math.random() * BattleField.MAP_WIDTH);
+			y = (int)(Math.random() * BattleField.MAP_HEIGHT);
+			attempt++;
+		} while (battlefield.getUnit(x, y) != null && attempt < 10);
+		// If we didn't find an empty spot, we won't add a new dragon
+		if (battlefield.getUnit(x, y) != null) return -1;
+		
+		//create new Player
+		Player player = new Player(x,y,this.battlefield);
+		//return Unit's unitID
+		return player.getUnitID();
+
 	}
 	
 

@@ -77,7 +77,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 	}
 	
 	
-	
+	//TODO : MOVE SENDING FUNCTIONS TO SERVER
 	
 	public ClientServer getClientReg(Node client) throws MalformedURLException, RemoteException, NotBoundException
 	{
@@ -127,9 +127,18 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 			return;
 		}
 		
+		//create new client as Player to Battlefield
+		int newUnitID= this.serverOwner.createPlayer();
+		if(newUnitID==-1) {
+			System.out.println("Server: Cannot create new Player");
+			return;
+		}
+		
+		
 		//put new Client to the clientList
-		ClientPlayerInfo newClient = new ClientPlayerInfo(client.getName(), client.getIP());
+		ClientPlayerInfo newClient = new ClientPlayerInfo(client.getName(), client.getIP(),newUnitID);
 		this.serverOwner.putToClientList(newClient);
+
 		
 		
 			//With this message, Server sends the OK subscription to the client
