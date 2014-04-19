@@ -23,8 +23,8 @@ public class PendingMonitor implements Runnable {
 
 		@Override
 		public void run() {
-		
-			while (true)
+			//if Server is killed, then finish
+			while (!Server.killServer)
 			{
 				Iterator<String> iter = PendingActions.keySet().iterator();
 				while(iter.hasNext()) {
@@ -35,9 +35,14 @@ public class PendingMonitor implements Runnable {
 				    if(curtime - val.getTimestamp() > PENDING_TIMEOUT)
 				    {
 				    	System.out.println("VALID key,val: " + key + "," + val.getSenderIP());
+				    	//TODO  make thread to make it valid , to handle the action and 
+				    							//broadcast the update to ALL Servers !+++SEND message
+				    	//switch(Action)   case Move : 
+				    			//	Server.getBattlefield().moveUnit(Server.getBattlefield().getUnit(senderX, senderY), targetX, targetY);
+				    	//TODO: check after the action if the player has to be removed and send an unSubscribeMessage
 				    	ValidActions.add(val);
 				    	iter.remove();	
-				    	//TODO !+++SEND message
+
 				    }
 				}
 				try {

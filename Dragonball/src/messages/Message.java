@@ -14,6 +14,8 @@ public class Message implements java.io.Serializable{
 	private String receiverIP;
 	private static int messageId=0; //increments at every instantiation
 	
+	private Long timeIssuedFromServer;
+	
 	private HashMap<String,String> content;
 
 	public Message() {
@@ -92,6 +94,14 @@ public class Message implements java.io.Serializable{
 
 	public void setContent(String key,String value) {
 		content.put(key,value);
+	}
+
+	public Long getTimeIssuedFromServer() {
+		return timeIssuedFromServer;
+	}
+
+	public void setTimeIssuedFromServer(Long timeIssuedFromServer) {
+		this.timeIssuedFromServer = timeIssuedFromServer;
 	}
 
 

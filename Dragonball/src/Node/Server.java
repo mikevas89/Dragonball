@@ -42,7 +42,7 @@ public class Server extends Node implements java.io.Serializable{
 	private static BattleField battlefield; 
 	private HashMap<String,LogInfo> PendingActions;
 	
-	public volatile boolean killServer = false;
+	public volatile static boolean killServer = false;
 	
 
 	private ArrayList<LogInfo> ValidActions;
@@ -142,7 +142,7 @@ public class Server extends Node implements java.io.Serializable{
 				----------------------------------------------------		
 				*/
 				int i=0;
-				while(!server.killServer)
+				while(!Server.killServer)
 				{
 					System.out.println("Server is running...");
 					try {
@@ -165,7 +165,7 @@ public class Server extends Node implements java.io.Serializable{
 					{
 						System.out.println("Valid are: "+temp.getSenderIP());
 					}
-				}
+				 }
 				
 				
 				    }
@@ -262,9 +262,9 @@ public class Server extends Node implements java.io.Serializable{
 	public HashMap<String, LogInfo> getPendingActions() {
 		return PendingActions;
 	}
-	
+	//	public synchronized void setPendingActions(int key,LogInfo value) {
 	public synchronized void setPendingActions(String key,LogInfo value) {
-		PendingActions.put(key,value);;
+		PendingActions.put(key,value);
 	}
 	
 	public synchronized void removePendingActions(String key) {

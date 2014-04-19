@@ -237,7 +237,7 @@ public class Client extends Node{
 						e.printStackTrace();
 					}
 				}
-
+				System.out.println("Cliient: UnSubscribedFromServer");
 			}
 
 		});
@@ -467,6 +467,15 @@ public class Client extends Node{
 		}
 	}
 	
+
+	public void onUnSubscribeFromServerMessageReceived(ClientServerMessage message) {
+		if(message.getSender().equals(this.serverConnected.getName())){
+			System.out.println("Client: onUnSubscribeFromServerMessageReceived");
+			this.running=false;	
+		}
+		
+	}
+	
 	public void onRedirectServerMessageReceived(ClientServerMessage message) throws MalformedURLException, 
 																			RemoteException, NotBoundException{
 		//TODO: checks a server list if the sender is on that list ?
@@ -535,6 +544,9 @@ public class Client extends Node{
 	public void setServerConnected(Node serverConnected) {
 		this.serverConnected = serverConnected;
 	}
+
+
+
 
 
 

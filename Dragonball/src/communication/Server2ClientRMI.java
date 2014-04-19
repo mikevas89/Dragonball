@@ -25,6 +25,7 @@ import Node.Node;
 import Node.Server;
 import structInfo.ClientPlayerInfo;
 import structInfo.Constants;
+import structInfo.LogInfo;
 import structInfo.UnitType;
 import units.Unit;
 
@@ -48,9 +49,12 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 	public void onMessageReceived(Message message) throws RemoteException, NotBoundException {
 		//if the message is not a proper ClientServerMessage, it is discarded
 		if(!(message instanceof ClientServerMessage)) return;
+		//issued time of Message in the Server
+		message.setTimeIssuedFromServer(System.currentTimeMillis());
 		ClientServerMessage clientServerMessage= (ClientServerMessage) message;
 		
 		System.out.println("Server: Received Message");
+		//TODO: spawn a thread to handle the message
 		
 		switch(message.getMessageTypeRequest()){
 		case ClientServerPing : 
@@ -185,7 +189,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		int unitID=Integer.parseInt(message.getContent().get("UnitID"));
 		int x=Integer.parseInt(message.getContent().get("x"));
 		int y=Integer.parseInt(message.getContent().get("y"));
-		
+		//find sender unit among the units of BattleField
 		for(Unit temp : Server.getBattlefield().getUnits())
 		{
 			if(temp.getUnitID()==unitID)
@@ -203,18 +207,23 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		else
 			adjacentUnitType = targetUnit.getType(x, y);
 		
+		//this.serverOwner.setPendingActions(x*y, new LogInfo(client.getIP(), LogInfo.Action, x, y, message.getTimeIssuedFromServer()));
+		
 		switch (adjacentUnitType) {
 			case undefined:
 				// There is no unit in the square. Move the player to this square
 				Server.getBattlefield().moveUnit(senderUnit, x, y);
+				//this.serverOwner.setPendingActions(x*y, new LogInfo(client.getIP(), LogInfo.Action.Move, x, y, message.getTimeIssuedFromServer()));
 				break;
 			case player:
 				// There is a player in the square, attempt a healing
 				Server.getBattlefield().healDamage(x, y, senderUnit.getAttackPoints());
+				//this.serverOwner.setPendingActions(x*y, new LogInfo(client.getIP(), LogInfo.Action.Heal, x, y, message.getTimeIssuedFromServer()));
 				break;
 			case dragon:
 				// There is a dragon in the square, attempt a dragon slaying
 				Server.getBattlefield().dealDamage(x, y, senderUnit.getAttackPoints());
+				//this.serverOwner.setPendingActions(x*y, new LogInfo(client.getIP(), LogInfo.Action.Damage, x, y, message.getTimeIssuedFromServer()));
 				break;
 		}
 	}

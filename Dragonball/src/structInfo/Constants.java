@@ -12,6 +12,6 @@ public class Constants {
 	public static final int RMI_PORT=1099;
 
 	public static final String RMI_CLIENT2_IP="145.94.181.223"; //Server IP
-	public static final long CLIENT_PERIOD_ACTION= 20000;
+	public static final long CLIENT_PERIOD_ACTION= 5000;
 	public static final long BROADCAST_PERIOD_TO_CLIENTS = CLIENT_PERIOD_ACTION/2;
 }

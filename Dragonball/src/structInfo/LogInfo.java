@@ -2,12 +2,18 @@ package structInfo;
 
 public class LogInfo {
 	
+	public enum Action {
+		Move, Heal, Damage
+	}
+	
 	
 	private String action;
 	private String x;
 	private String y;
 	private Long timestamp;
 	
+	//TODO: public LogInfo(String senderIP, Action action,int unitID,int sernderX, int senderY, String sernderType,
+											// int targetX, int targetY, String targetType, Long time)
 	public LogInfo(String senderIP, String action, String x, String y, Long time)
 	{
 		this.senderIP=senderIP;

@@ -54,6 +54,8 @@ public class ClientRMI extends UnicastRemoteObject implements ClientServer {
 				case GetBattlefield:
 					clientOwner.onBattleFieldMessageReceived(csMessage);
 					break;
+				case UnSubscribeFromServer:
+					clientOwner.onUnSubscribeFromServerMessageReceived(csMessage);
 				case RedirectConnection:
 					try {
 						clientOwner.onRedirectServerMessageReceived(csMessage);
