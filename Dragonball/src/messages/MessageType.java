@@ -7,6 +7,12 @@ public enum MessageType {
 	UnSubscribeFromServer,
 	Action,
 	GetBattlefield,
-	RedirectConnection
+	RedirectConnection,
 	//more types are put here
+	
+	ServerServerPing,
+	//Subscribe2Server,
+	CheckPending,
+	DeleteFromValid
+	//GetBattlefield
 }

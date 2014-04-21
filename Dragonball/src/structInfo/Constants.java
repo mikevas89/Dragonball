@@ -9,8 +9,9 @@ public class Constants {
 	public static final int NODES_PER_IP=3;
 	public static final int NUM_NODES=NUM_IPS*NODES_PER_IP;
 	
-	public static final int RMI_PORT=1099;
-
+	public static final int SERVER_CLIENT_RMI_PORT=1099;
+	public static final int SERVER_SERVER_RMI_PORT=1100;
+	
 	public static final String RMI_CLIENT2_IP="145.94.181.223"; //Server IP
 	
 	public static final long CLIENT_CHECKING_ISSUBSCRIBED = 500;

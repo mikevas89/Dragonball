@@ -1,13 +1,14 @@
 package Node;
 
 import game.BattleField;
-
 import game.BattleFieldViewer;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
@@ -29,13 +30,16 @@ import units.Player;
 import units.Unit;
 import Node.Node;
 import communication.Server2ClientRMI;
+import communication.Server2ServerRMI;
 
 public class Server extends Node implements java.io.Serializable{
 	
 	
 	private static final long serialVersionUID = 1L;
 
-	private static ArrayList<ServerInfo> serverList;
+	private static HashMap<Node, ServerInfo> serverList;
+	
+
 	private static HashMap<Node,ClientPlayerInfo> clientList;
 	
 	public static final int MIN_PLAYER_COUNT = 30;
@@ -55,14 +59,57 @@ public class Server extends Node implements java.io.Serializable{
 
 	public int test=0;
 
-	public Server(){
+	public Server() throws IOException{
 		super();
-		serverList = new ArrayList<ServerInfo>();
+		serverList = new HashMap<Node, ServerInfo>();
 		clientList= new HashMap<Node,ClientPlayerInfo>(); //list of clients connected to that server
 		PendingActions= Collections.synchronizedMap(new HashMap<String, LogInfo>());   // list of pending action
 		ValidActions= new ArrayList<LogInfo>();   // list of valid actions
 		validBlockQueue = new LinkedBlockingQueue<>();
-	}
+		
+		//getting a unique id for every server
+		int numServer = -1;
+		String line = null;
+		BufferedReader reader = null;
+		try {
+			reader = new BufferedReader(new FileReader("Serverid.txt"));
+			try {
+				line = reader.readLine();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			if (line == null) {
+				numServer = 0;
+			} else {
+				numServer = Integer.parseInt(line);
+			}
+		} catch (FileNotFoundException e) {
+			numServer = 0;
+		} finally {
+			if (reader != null)
+				try {
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+		}
+
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter("Serverid.txt"));
+			writer.write(String.valueOf(numServer + 1));
+		} finally {
+			if (writer != null) {
+				writer.flush();
+				writer.close();
+			}
+		}
+		//unique name of Client
+		this.setName("Server"+ String.valueOf(numServer));
+		System.out.println("Server Name: "+ this.getName());
+
+}
+
 	
 		
 
@@ -77,8 +124,12 @@ public class Server extends Node implements java.io.Serializable{
 		
 		new Thread(new Runnable() {
 		    public void run() {
-		    	Server server=new Server();
-		 		server.setName("dante"); //pc name
+		    	Server server = null;
+				try {
+					server = new Server();
+				} catch (IOException e2) {
+					e2.printStackTrace();
+				}
 		 		
 		 		//Server RMI for Client communication
 		 		Server2ClientRMI serverComm = null;
@@ -87,12 +138,13 @@ public class Server extends Node implements java.io.Serializable{
 				} catch (RemoteException e1) {
 					e1.printStackTrace();
 				}
-				server.createServerReg(server,serverComm);
+				server.createServerClientReg(server,serverComm);
 				
 
 		 				
 		 		File file = new File("src/Servers.txt");
 				BufferedReader reader = null;
+				int j=0;
 
 				try {
 				    reader = new BufferedReader(new FileReader(file));
@@ -100,7 +152,8 @@ public class Server extends Node implements java.io.Serializable{
 
 				    while ((text = reader.readLine()) != null) {
 				    	String[] parts = text.split(" ");
-				        server.getServerList().add(new ServerInfo(parts[0], parts[1]));
+				    	if(!server.getName().equals(parts[0]))
+				    			server.putToServerList(new ServerInfo(parts[0], parts[1], ++j,false));
 				    }
 				    
 				} catch (FileNotFoundException e) {
@@ -206,8 +259,8 @@ public class Server extends Node implements java.io.Serializable{
 	}
 	
 	public void printlist()
-	{
-		for(ServerInfo item: this.getServerList()){
+	{	System.out.println("Printing server list:");
+		for(Node item: Server.getServerList().keySet()){
 			System.out.println(item.getName()+"   "+item.getIP());			
 		}
 	}
@@ -218,11 +271,11 @@ public class Server extends Node implements java.io.Serializable{
 	 ----------------------------------------------------		
 	*/
 	
-	public void createServerReg(Node node, Server2ClientRMI comm) {  //server creates its Registry entry
+	public void createServerClientReg(Node node, Server2ClientRMI comm) {  //server creates its Registry entry
 		
 		Registry serverRegistry = null;
 		try {
-			serverRegistry = LocateRegistry.createRegistry(Constants.RMI_PORT);
+			serverRegistry = LocateRegistry.createRegistry(Constants.SERVER_CLIENT_RMI_PORT);
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
@@ -231,7 +284,23 @@ public class Server extends Node implements java.io.Serializable{
 		} catch (RemoteException | AlreadyBoundException e) {
 			e.printStackTrace();
 		} //server's name
-		System.out.println(this.getName()+ " is up and running!");
+		System.out.println(this.getName()+ " is up and running for Server/Client Com!");
+	}
+	
+	public void createServerServerReg(Node node, Server2ServerRMI comm) {  //server creates its Registry entry
+		
+		Registry serverRegistry = null;
+		try {
+			serverRegistry = LocateRegistry.createRegistry(Constants.SERVER_SERVER_RMI_PORT);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		try {
+			serverRegistry.bind(this.getName(), comm );
+		} catch (RemoteException | AlreadyBoundException e) {
+			e.printStackTrace();
+		} //server's name
+		System.out.println(this.getName()+ " is up and running for Server/Server Com!");
 	}
 	
 	
@@ -282,6 +351,12 @@ public class Server extends Node implements java.io.Serializable{
 	public static HashMap<Node,ClientPlayerInfo> getClientList() {
 		return clientList;
 	}
+	
+	public synchronized static void putToServerList(ServerInfo serverinfo) {
+		Node node = new Node(serverinfo.getName(),
+				serverinfo.getIP());
+		Server.getServerList().put(node, serverinfo);
+	}
 
 	public synchronized void putToClientList(ClientPlayerInfo clientPlayerInfo) {
 		Node node = new Node(clientPlayerInfo.getName(),
@@ -296,7 +371,7 @@ public class Server extends Node implements java.io.Serializable{
 		return Server.getBattlefield().getUnit(x, y);
 	}
 
-	public ArrayList<ServerInfo> getServerList() {
+	public static HashMap<Node, ServerInfo> getServerList() {
 		return serverList;
 	}
 	

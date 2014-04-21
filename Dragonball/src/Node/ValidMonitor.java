@@ -29,9 +29,14 @@ public class ValidMonitor implements Runnable{
 				e.printStackTrace();
 			}
 			//TODO,TODO : check for rollback here? after this, the action is valid and it WILL BE played (targetUnitID may also be -1)
-			
+			Unit existingTargetUnit=Server.getBattlefield().getUnit(newAction.getTargetX(), newAction.getTargetY());
+		    int existingTargetUnitID;
+		    if(existingTargetUnit==null)
+		    	existingTargetUnitID=-1;
+		    else
+		    	existingTargetUnitID=existingTargetUnit.getUnitID();
 		    if(Server.getBattlefield().getUnit(newAction.getSenderX(), newAction.getSenderY()).getUnitID()!=newAction.getSenderUnitID() ||
-		    		Server.getBattlefield().getUnit(newAction.getTargetX(), newAction.getTargetY()).getUnitID()!=newAction.getTargetUnitID()){
+		    		existingTargetUnitID!=newAction.getTargetUnitID()){
 					    	System.err.println("Valid Monitor found an inconsistency from the updated Battlefield");
 							continue; 	
 		    }
@@ -69,8 +74,10 @@ public class ValidMonitor implements Runnable{
 				
 			}).start();
 			
+			
 			Unit targetUnit= Server.getBattlefield().getUnitByUnitID(newAction.getTargetUnitID());
 			if((targetUnit instanceof Player) && (targetUnit.getHitPoints()<=0)){
+				System.err.println("Valid Monitor went to unsubscribed");
 				Runnable messageSender = new UnSubscribeMessageSender(this.getServerOwner(),targetUnit);
 				new Thread(messageSender).start();
 				LogInfo playerDown = new LogInfo(Action.Removed,targetUnit.getUnitID(), targetUnit.getX(),targetUnit.getY(),

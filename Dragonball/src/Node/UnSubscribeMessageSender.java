@@ -73,6 +73,7 @@ public class UnSubscribeMessageSender implements Runnable{
 				this.getServerSender().getIP(),
 				client.getName(),
 				client.getIP());
+		sendUnSubscribed.setBattlefield(Server.getBattlefield());
 		
 		try {
 			clientCommunication.onMessageReceived(sendUnSubscribed);

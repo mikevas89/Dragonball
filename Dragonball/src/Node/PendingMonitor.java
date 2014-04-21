@@ -6,6 +6,7 @@ import java.util.concurrent.BlockingQueue;
 
 import structInfo.Constants;
 import structInfo.LogInfo;
+import units.Unit;
 
 public class PendingMonitor implements Runnable {
 
@@ -31,9 +32,14 @@ public class PendingMonitor implements Runnable {
 				    //print Pending actions
 				    action.toString();
 				    //check if the action can still be played according to an update of the battlefield
-				    
+				    Unit existingTargetUnit=Server.getBattlefield().getUnit(action.getTargetX(), action.getTargetY());
+				    int existingTargetUnitID;
+				    if(existingTargetUnit==null)
+				    	existingTargetUnitID=-1;
+				    else
+				    	existingTargetUnitID=existingTargetUnit.getUnitID();
 				    if(Server.getBattlefield().getUnit(action.getSenderX(), action.getSenderY()).getUnitID()!=action.getSenderUnitID() ||
-				    		Server.getBattlefield().getUnit(action.getTargetX(), action.getTargetY()).getUnitID()!=action.getTargetUnitID()){
+				    		existingTargetUnitID!=action.getTargetUnitID()){
 				    				System.err.println("Pending Monitor found an inconsistency from the updated Battlefield");
 				    				iter.remove();
 				    				continue;

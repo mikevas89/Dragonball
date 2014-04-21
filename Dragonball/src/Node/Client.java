@@ -168,7 +168,12 @@ public class Client extends Node{
 						bindInExistingRegistry(client, commClient);
 				
 				//server instance for logging the server for connection
-				Node server=new Server();
+				Node server = null;
+				try {
+					server = new Server();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
 				server.setName("dante");
 				
 				InetAddress IP = null;
@@ -333,7 +338,7 @@ public class Client extends Node{
 		System.out.println("bindInExistingRegistry");
 		Registry myRegistry;
 		try {
-			myRegistry = LocateRegistry.getRegistry(Constants.RMI_PORT);
+			myRegistry = LocateRegistry.getRegistry(Constants.SERVER_CLIENT_RMI_PORT);
 			myRegistry.bind(node.getName(), comm); // bind with their names
 			System.out.println("bindInExistingRegistry completed");
 			return true;
@@ -349,7 +354,7 @@ public class Client extends Node{
 		System.out.println("createRegistryAndBind");
 		Registry myRegistry;
 		try {
-			myRegistry = LocateRegistry.createRegistry(Constants.RMI_PORT);
+			myRegistry = LocateRegistry.createRegistry(Constants.SERVER_CLIENT_RMI_PORT);
 			myRegistry.rebind(node.getName(), comm); // server's name
 			System.out.println("createRegistryAndBind completed");
 			return true;
@@ -373,7 +378,7 @@ public class Client extends Node{
 		
 		Registry clientRegistry = null;
 		try {
-			clientRegistry = LocateRegistry.createRegistry(Constants.RMI_PORT);
+			clientRegistry = LocateRegistry.createRegistry(Constants.SERVER_CLIENT_RMI_PORT);
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
@@ -538,6 +543,7 @@ public class Client extends Node{
 	public void onUnSubscribeFromServerMessageReceived(ClientServerMessage message) {
 		if(message.getSender().equals(this.serverConnected.getName())){
 			System.out.println("Client: onUnSubscribeFromServerMessageReceived");
+			this.recomputeBattleField(message.getBattlefield());
 			this.running=false;	
 			serverTimeoutTimer.cancel();
 		}
