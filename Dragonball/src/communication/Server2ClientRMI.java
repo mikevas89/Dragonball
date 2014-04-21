@@ -27,6 +27,7 @@ import structInfo.ClientPlayerInfo;
 import structInfo.Constants;
 import structInfo.LogInfo;
 import structInfo.UnitType;
+import structInfo.LogInfo.Action;
 import units.Unit;
 
 
@@ -49,6 +50,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 	public void onMessageReceived(Message message) throws RemoteException, NotBoundException {
 		//if the message is not a proper ClientServerMessage, it is discarded
 		if(!(message instanceof ClientServerMessage)) return;
+		
 		//issued time of Message in the Server
 		message.setTimeIssuedFromServer(System.currentTimeMillis());
 		ClientServerMessage clientServerMessage= (ClientServerMessage) message;
@@ -127,7 +129,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		
 		Node client=new Node(message.getSender(),message.getSenderIP());
 		//checking if client is already subscribed
-		if(this.serverOwner.getClientList().containsKey(client)){
+		if(Server.getClientList().containsKey(client)){
 			System.err.println("Client: "+ message.getSender() +" tries to resubscribe");
 			return;
 		}
@@ -185,47 +187,47 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 	private void onActionMessageReceived(ClientServerMessage message) {
 		System.out.println("Server: onActionMessageReceived");
 		Node client=new Node(message.getSender(),message.getSenderIP());
-		Unit senderUnit = null;
+
 		int unitID=Integer.parseInt(message.getContent().get("UnitID"));
-		int x=Integer.parseInt(message.getContent().get("x"));
-		int y=Integer.parseInt(message.getContent().get("y"));
+		int targetX=Integer.parseInt(message.getContent().get("x"));
+		int targetY=Integer.parseInt(message.getContent().get("y"));
 		//find sender unit among the units of BattleField
-		for(Unit temp : Server.getBattlefield().getUnits())
-		{
-			if(temp.getUnitID()==unitID)
-			{
-				senderUnit=temp;
-				break;
-			}
+		
+		Unit senderUnit = Server.getBattlefield().getUnitByUnitID(unitID);
+		if(senderUnit==null){
+			System.err.println("Server: Action from not Client, invalid unitID="+ unitID);
+			return;
 		}
 		
 		// Get what unit lies in the target square
-		Unit targetUnit = Server.getBattlefield().getUnit(x, y);
-		UnitType adjacentUnitType;
+		Unit targetUnit = Server.getBattlefield().getUnit(targetX, targetY);
+		UnitType targetType;
+		Action action = null;
 		if(targetUnit==null)
-			adjacentUnitType = UnitType.undefined;
+			targetType = UnitType.undefined;
 		else
-			adjacentUnitType = targetUnit.getType(x, y);
+			targetType = targetUnit.getType(targetX, targetY);
 		
-		//this.serverOwner.setPendingActions(x*y, new LogInfo(client.getIP(), LogInfo.Action, x, y, message.getTimeIssuedFromServer()));
-		
-		switch (adjacentUnitType) {
+		switch (targetType) {
 			case undefined:
-				// There is no unit in the square. Move the player to this square
-				Server.getBattlefield().moveUnit(senderUnit, x, y);
-				//this.serverOwner.setPendingActions(x*y, new LogInfo(client.getIP(), LogInfo.Action.Move, x, y, message.getTimeIssuedFromServer()));
+				action = Action.Move;
 				break;
 			case player:
-				// There is a player in the square, attempt a healing
-				Server.getBattlefield().healDamage(x, y, senderUnit.getAttackPoints());
-				//this.serverOwner.setPendingActions(x*y, new LogInfo(client.getIP(), LogInfo.Action.Heal, x, y, message.getTimeIssuedFromServer()));
+				action= Action.Heal;
 				break;
 			case dragon:
-				// There is a dragon in the square, attempt a dragon slaying
-				Server.getBattlefield().dealDamage(x, y, senderUnit.getAttackPoints());
-				//this.serverOwner.setPendingActions(x*y, new LogInfo(client.getIP(), LogInfo.Action.Damage, x, y, message.getTimeIssuedFromServer()));
+				action=Action.Damage;
 				break;
 		}
+		//new pending move
+		LogInfo newPendingAction = new LogInfo(action, unitID, senderUnit.getX(),senderUnit.getY(),
+												senderUnit.getType(senderUnit.getX(),senderUnit.getY()), 
+												targetX, targetY, targetType,
+												message.getTimeIssuedFromServer(), message.getSenderIP());
+		System.out.println("New Action : "+ newPendingAction.toString());
+		
+		//add action to pending move
+		this.serverOwner.getPendingActions().put(String.valueOf(targetX)+" "+String.valueOf(targetY), newPendingAction);	
 	}
 	
 

@@ -25,7 +25,7 @@ import structInfo.UnitType;
  * @author Pieter Anemaet, Boaz Pat-El
  */
 @SuppressWarnings("serial")
-public class Dragon extends Unit implements Serializable, Callable {
+public class Dragon extends Unit implements Serializable {
 	/* Reaction speed of the dragon
 	 * This is the time needed for the dragon to take its next turn.
 	 * Measured in half a seconds x GAME_SPEED.

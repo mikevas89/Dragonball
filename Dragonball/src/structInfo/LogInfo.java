@@ -6,25 +6,44 @@ public class LogInfo {
 		Move, Heal, Damage
 	}
 	
-	
-	private String action;
-	private String x;
-	private String y;
+
+	private Action action;
+	private int unitID;
+	private int senderX;
+	private int senderY;
+	private UnitType senderType;
+	private int targetX;
+	private int targetY;
+	private UnitType targetType;
 	private Long timestamp;
+	private String senderIP;
 	
-	//TODO: public LogInfo(String senderIP, Action action,int unitID,int sernderX, int senderY, String sernderType,
-											// int targetX, int targetY, String targetType, Long time)
-	public LogInfo(String senderIP, String action, String x, String y, Long time)
-	{
-		this.senderIP=senderIP;
-		this.action=action;
-		this.x=x;
-		this.y=y;
-		this.timestamp=time;
+	public LogInfo(Action action, int unitID, int senderX, int senderY,
+			UnitType senderType, int targetX, int targetY, UnitType targetType,
+			Long timestamp, String senderIP) {
+		this.action = action;
+		this.unitID = unitID;
+		this.senderX = senderX;
+		this.senderY = senderY;
+		this.senderType = senderType;
+		this.targetX = targetX;
+		this.targetY = targetY;
+		this.targetType = targetType;
+		this.timestamp = timestamp;
+		this.senderIP = senderIP;
 	}
 	
-	
-	private String senderIP;
+
+	@Override
+	public String toString() {
+		return "LogInfo [action=" + action + ", unitID=" + unitID
+				+ ", senderX=" + senderX + ", senderY=" + senderY
+				+ ", senderType=" + senderType + ", targetX=" + targetX
+				+ ", targetY=" + targetY + ", targetType=" + targetType
+				+ ", timestamp=" + timestamp + "]";
+	}
+
+
 	public String getSenderIP() {
 		return senderIP;
 	}
@@ -33,28 +52,12 @@ public class LogInfo {
 		this.senderIP = senderIP;
 	}
 
-	public String getAction() {
+	public Action getAction() {
 		return action;
 	}
 
-	public void setAction(String action) {
+	public void setAction(Action action) {
 		this.action = action;
-	}
-
-	public String getX() {
-		return x;
-	}
-
-	public void setX(String x) {
-		this.x = x;
-	}
-
-	public String getY() {
-		return y;
-	}
-
-	public void setY(String y) {
-		this.y = y;
 	}
 
 	public Long getTimestamp() {
@@ -63,6 +66,62 @@ public class LogInfo {
 
 	public void setTimestamp(Long timestamp) {
 		this.timestamp = timestamp;
+	}
+
+	public int getUnitID() {
+		return unitID;
+	}
+
+	public void setUnitID(int unitID) {
+		this.unitID = unitID;
+	}
+
+	public int getSenderX() {
+		return senderX;
+	}
+
+	public void setSenderX(int senderX) {
+		this.senderX = senderX;
+	}
+
+	public int getSenderY() {
+		return senderY;
+	}
+
+	public void setSenderY(int senderY) {
+		this.senderY = senderY;
+	}
+
+	public int getTargetX() {
+		return targetX;
+	}
+
+	public void setTargetX(int targetX) {
+		this.targetX = targetX;
+	}
+
+	public int getTargetY() {
+		return targetY;
+	}
+
+	public void setTargetY(int targetY) {
+		this.targetY = targetY;
+	}
+
+	public UnitType getTargetType() {
+		return targetType;
+	}
+
+	public void setTargetType(UnitType targetType) {
+		this.targetType = targetType;
+	}
+
+	public UnitType getSenderType() {
+		return senderType;
+	}
+
+	public void setSenderType(UnitType senderType) {
+		this.senderType = senderType;
 	}
 
 	

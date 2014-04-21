@@ -1,62 +1,179 @@
 package Node;
 
 import game.BattleField;
+import game.GameState;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.ListIterator;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
 
+import structInfo.Constants;
+import structInfo.Directions;
+import structInfo.UnitType;
 import units.Dragon;
+import units.Player;
+import units.Unit;
 
 public class DragonMaster implements Runnable {
 	
-	BattleField battlefield;
-	int dragonCount;
+	private BattleField battlefield;
+	private int dragonCount;
+	private volatile boolean runDragons; //server that moves the dragons
+	private volatile boolean createDragons; //server creates dragons
 	
-	public DragonMaster(BattleField battlefield, int dragonCount) {
+	public DragonMaster(BattleField battlefield, int dragonCount, boolean runDragons,boolean createDragons) {
 		this.battlefield=battlefield;
 		this.dragonCount=dragonCount;
+		this.setRunDragons(runDragons);
+		this.setCreateDragons(createDragons);
+		
+		if (this.createDragons) {
+			for (int i = 0; i < dragonCount; i++) {
+				int x, y, attempt = 0;
+				do {
+					x = (int) (Math.random() * BattleField.MAP_WIDTH);
+					y = (int) (Math.random() * BattleField.MAP_HEIGHT);
+					attempt++;
+				} while (battlefield.getUnit(x, y) != null && attempt < 10);
+
+				// If we didn't find an empty spot, we won't add a new dragon
+				if (battlefield.getUnit(x, y) != null)
+					break;
+
+				final int finalX = x;
+				final int finalY = y;
+				Dragon dragon = new Dragon(finalX, finalY, battlefield);
+			}
+		}
+		
 	}
 
 	@Override
 	public void run() {
-		Executor ex= Executors.newFixedThreadPool(dragonCount);
-		CompletionService<String> cs = new ExecutorCompletionService<String>(ex);
-		for(int i = 0; i < dragonCount; i++) {
-			int x, y, attempt = 0;
-			do {
-				x = (int)(Math.random() * BattleField.MAP_WIDTH);
-				y = (int)(Math.random() * BattleField.MAP_HEIGHT);
-				attempt++;
-			} while (battlefield.getUnit(x, y) != null && attempt < 10);
-
-			// If we didn't find an empty spot, we won't add a new dragon
-			if (battlefield.getUnit(x, y) != null) break;
-			
-			final int finalX = x;
-			final int finalY = y;
-			Dragon dragon =new Dragon(finalX, finalY,battlefield);
-			cs.submit(dragon);
-			
-		}
-		String terminationResult=null;
-		for(int i=0;i<dragonCount;i++){
-			
+		
+		while(!runDragons){
+			//sleep if other server sends the moves of Dragons
 			try {
-				terminationResult = cs.take().get();
+				Thread.sleep(Constants.SERVER2SERVER_TIMEOUT);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
-			} catch (ExecutionException e) {
-				e.printStackTrace();
 			}
-			//utilize the result 
-			//System.out.println(terminationResult);
-			String[] tokens = terminationResult.split(" ");
-			battlefield.removeUnit(Integer.parseInt(tokens[0]), Integer.parseInt(tokens[1]));
 		}
 		
+		//this server makes the moves
+		int turn=0;
+		while (runDragons) {
+			//turn++;
+			if (turn == 5){
+				runDragons=false;
+				break;
+			}
+			
+			// Sleep while the dragon is considering its next move
+			try {
+				Thread.sleep(Constants.CLIENT_PERIOD_ACTION);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			// TODO: make moves for Dragons, remove dead
+			for (Unit unit : this.battlefield.getUnits()) {
+				if (unit instanceof Player)
+					continue;
+				ArrayList <Directions> adjacentPlayers = new ArrayList<Directions> ();
+
+				// Stop if the dragon runs out of hitpoints
+				if (unit.getHitPoints() <= 0){
+					this.battlefield.removeUnit(unit.getX(), unit.getY());
+					continue;
+				}
+					
+				// Decide what players are near
+				if (unit.getY() > 0)
+					if (unit.getType(unit.getX(), unit.getY() - 1) == UnitType.player)
+						adjacentPlayers.add(Directions.up);
+				if (unit.getY() < BattleField.MAP_WIDTH - 1)
+					if (unit.getType(unit.getX(), unit.getY() + 1) == UnitType.player)
+						adjacentPlayers.add(Directions.down);
+				if (unit.getX() > 0)
+					if (unit.getType(unit.getX() - 1, unit.getY()) == UnitType.player)
+						adjacentPlayers.add(Directions.left);
+				if (unit.getX() < BattleField.MAP_WIDTH - 1)
+					if (unit.getType(unit.getX() + 1, unit.getY()) == UnitType.player)
+						adjacentPlayers.add(Directions.right);
+
+				// Pick a random player to attack
+				if (adjacentPlayers.size() == 0)
+					continue; // There are no players to attack
+				Directions playerToAttack = adjacentPlayers.get((int) (Math
+						.random() * adjacentPlayers.size()));
+				
+				Unit targetUnit= null;
+
+				// Attack the player
+				switch (playerToAttack) {
+				case up:
+					targetUnit= this.battlefield.getUnit(unit.getX(), unit.getY() - 1);
+					this.battlefield.dealDamage(unit.getX(), unit.getY() - 1,
+							unit.getAttackPoints());
+					break;
+				case right:
+					targetUnit= this.battlefield.getUnit(unit.getX() + 1, unit.getY());
+					this.battlefield.dealDamage(unit.getX() + 1, unit.getY(),
+							unit.getAttackPoints());
+					break;
+				case down:
+					targetUnit= this.battlefield.getUnit(unit.getX(), unit.getY() + 1);
+					this.battlefield.dealDamage(unit.getX(), unit.getY() + 1,
+							unit.getAttackPoints());
+					break;
+				case left:
+					targetUnit= this.battlefield.getUnit(unit.getX() - 1, unit.getY());
+					this.battlefield.dealDamage(unit.getX() - 1, unit.getY(),
+							unit.getAttackPoints());
+					break;
+				}
+				//send unsubscribe message
+				Runnable messageSender = new MessageSender(targetUnit);
+				new Thread(messageSender).start();
+			
+			}
+		}
+		
+		if(!this.runDragons){
+			ListIterator<Unit> it = this.battlefield.getUnits().listIterator();
+			while(it.hasNext()){
+				Unit unit= it.next();
+				if (unit instanceof Player) continue;
+				this.battlefield.removeUnit(unit.getX(), unit.getY(), it);
+			}
+		}
+		
+		//TODO:stopGame();
+			
+
+	}
+
+	public boolean isRunDragons() {
+		return runDragons;
+	}
+
+	public void setRunDragons(boolean runDragons) {
+		this.runDragons = runDragons;
+	}
+
+	public boolean isCreateDragons() {
+		return createDragons;
+	}
+
+	public void setCreateDragons(boolean createDragons) {
+		this.createDragons = createDragons;
 	}
 	
 

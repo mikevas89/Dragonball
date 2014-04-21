@@ -12,6 +12,12 @@ public class Constants {
 	public static final int RMI_PORT=1099;
 
 	public static final String RMI_CLIENT2_IP="145.94.181.223"; //Server IP
-	public static final long CLIENT_PERIOD_ACTION= 5000;
+	
+	public static final long CLIENT_CHECKING_ISSUBSCRIBED = 500;
+	public static final long CLIENT_PERIOD_ACTION= 3000;//make it 5000
 	public static final long BROADCAST_PERIOD_TO_CLIENTS = CLIENT_PERIOD_ACTION/2;
+	public static final long PENDING_TIMEOUT=1000;
+	public static final long CHECK_PENDING_LIST_PERIOD=1000;
+	
+	public static final long SERVER2SERVER_TIMEOUT = 2000;
 }

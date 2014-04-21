@@ -5,6 +5,12 @@ import game.BattleFieldViewer;
 
 import interfaces.ClientServer;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
@@ -56,8 +62,50 @@ public class Client extends Node{
 	private static  BattleField battlefield;
 
 
-	public Client(){
+	public Client() throws IOException{
 		super();
+		
+		//getting a unique id for every client
+		int numClient = -1;
+		String line = null;
+		BufferedReader reader = null;
+		try {
+			reader = new BufferedReader(new FileReader("id.txt"));
+			try {
+				line = reader.readLine();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			if (line == null) {
+				numClient = 0;
+			} else {
+				numClient = Integer.parseInt(line);
+			}
+		} catch (FileNotFoundException e) {
+			numClient = 0;
+		} finally {
+			if (reader != null)
+				try {
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+		}
+
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter("id.txt"));
+			writer.write(String.valueOf(numClient + 1));
+		} finally {
+			if (writer != null) {
+				writer.flush();
+				writer.close();
+			}
+		}
+		//unique name of Client
+		this.setName("danteClient"+ String.valueOf(numClient));
+		System.out.println("Client Name: "+ this.getName());
+		this.isSubscribed=false;
 	}
 	
 	
@@ -73,6 +121,8 @@ public class Client extends Node{
 	 */
 	public static void main(String[] args) {
 		
+		
+		
 		battlefield = BattleField.getBattleField();
 		
 		Thread clientThread = new Thread(new Runnable(){
@@ -85,8 +135,13 @@ public class Client extends Node{
 				int targetX = 0, targetY = 0;
 				
 				
-				Client client = new Client();
-				client.setName("danteClient");
+				Client client = null;
+				try {
+					client = new Client();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+
 				
 		 		//battlefield = BattleField.getBattleField();
 				new BattleFieldViewer(battlefield);
@@ -169,13 +224,18 @@ public class Client extends Node{
 				while(client.running){
 					try {
 						
+						while(!client.isSubscribed){
+							Thread.sleep(Constants.CLIENT_CHECKING_ISSUBSCRIBED);
+						}
+					
+						
 						Thread.sleep(Constants.CLIENT_PERIOD_ACTION);
 						
 						// Randomly choose one of the four wind directions to move to if there are no units present
 						direction = Directions.values()[ (int)(Directions.values().length * Math.random()) ];
 						adjacentUnitType = UnitType.undefined;
 
-						Unit myUnit= client.getUnitFromList();
+						Unit myUnit= client.getUnitFromBattleFieldList();
 						if(myUnit == null)
 						{
 							System.err.println("Client: Cannot find my player");
@@ -218,6 +278,13 @@ public class Client extends Node{
 								break;
 						}
 						
+						Unit targetUnit=Client.getBattleField().getUnit(targetX, targetY);
+						
+						//player shouldn't heal one player with full health
+						if(targetUnit!=null && targetUnit.getHitPoints()==targetUnit.getMaxHitPoints())
+							continue;
+						
+						
 						ClientServerMessage actionMessage = new ClientServerMessage(
 								MessageType.Action, client.getName(),
 								client.getIP(), server.getName(), server
@@ -246,7 +313,7 @@ public class Client extends Node{
 
 	}
 	
-	public Unit getUnitFromList()
+	public Unit getUnitFromBattleFieldList()
 	{
 		for(Unit temp: battlefield.getUnits())
 		{

@@ -15,7 +15,9 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import structInfo.ClientPlayerInfo;
 import structInfo.Constants;
@@ -31,8 +33,8 @@ public class Server extends Node implements java.io.Serializable{
 	
 	private static final long serialVersionUID = 1L;
 
-	private ArrayList<ServerInfo> serverList;
-	private HashMap<Node,ClientPlayerInfo> clientList;
+	private static ArrayList<ServerInfo> serverList;
+	private static HashMap<Node,ClientPlayerInfo> clientList;
 	
 	public static final int MIN_PLAYER_COUNT = 30;
 	public static final int MAX_PLAYER_COUNT = 60;
@@ -40,12 +42,15 @@ public class Server extends Node implements java.io.Serializable{
 	public static final int TIME_BETWEEN_PLAYER_LOGIN = 5000; // In milliseconds
 	
 	private static BattleField battlefield; 
-	private HashMap<String,LogInfo> PendingActions;
+	private HashMap<String,LogInfo> PendingActions; //pending moves
+	private ArrayList<LogInfo> ValidActions; //log ofthe valid actions
+	private final BlockingQueue<LogInfo> validBlockQueue;//intermediate between valid and pending
 	
 	public volatile static boolean killServer = false;
 	
+	public volatile static boolean otherServerExists=false;
 
-	private ArrayList<LogInfo> ValidActions;
+
 	public int test=0;
 
 	public Server(){
@@ -54,6 +59,7 @@ public class Server extends Node implements java.io.Serializable{
 		clientList= new HashMap<Node,ClientPlayerInfo>(); //list of clients connected to that server
 		PendingActions= new HashMap<String, LogInfo>();   // list of pending action
 		ValidActions= new ArrayList<LogInfo>();   // list of valid actions
+		validBlockQueue = new LinkedBlockingQueue<>();
 	}
 	
 		
@@ -80,12 +86,9 @@ public class Server extends Node implements java.io.Serializable{
 					e1.printStackTrace();
 				}
 				server.createServerReg(server,serverComm);
+				
 
-		 		
-		 		
-		 		battlefield = BattleField.getBattleField();
-				new BattleFieldViewer(battlefield);
-		 		
+		 				
 		 		File file = new File("src/Servers.txt");
 				BufferedReader reader = null;
 
@@ -114,19 +117,46 @@ public class Server extends Node implements java.io.Serializable{
 				//print out the list
 				server.printlist();
 				
-				/*----------------------------------------------------
-						DragonMaster creation (which creates all dragons)
-				----------------------------------------------------		
-				*/
-				Runnable dragonmaster = new DragonMaster(battlefield,DRAGON_COUNT);
-				new Thread(dragonmaster).start();	
+				boolean startDragons,runDragons;
 				
+				if (server.startGame()) {
+					// create Game
+					battlefield = BattleField.getBattleField();
+					//create Dragons
+					runDragons=true;
+					startDragons=true;
+				}
+				else{
+					runDragons=false;
+					startDragons=false;
+				}
+					
+				
+		 		
+
+				new BattleFieldViewer(battlefield);
+				
+				/*----------------------------------------------------
+				DragonMaster creation (which creates all dragons)
+				----------------------------------------------------		
+				 */
+				Runnable dragonmaster = new DragonMaster(battlefield,DRAGON_COUNT,runDragons,startDragons);
+				new Thread(dragonmaster).start();
+				
+
 				/*----------------------------------------------------
 						Create thread for monitoring the pending action list
 				----------------------------------------------------		
 				*/
-				Runnable pendingMonitor = new PendingMonitor(server.getPendingActions(),server.getValidActions());
+				Runnable pendingMonitor = new PendingMonitor(server.getPendingActions(),server.getValidBlockQueue());
 				new Thread(pendingMonitor).start();
+				
+				/*----------------------------------------------------
+						Create thread for validating the pending action list
+				----------------------------------------------------		
+				*/
+				Runnable validMonitor = new ValidMonitor(server.getValidActions(),server.getValidBlockQueue());
+				new Thread(validMonitor).start();
 				
 				/*----------------------------------------------------
 				  		Thread to update clients about Battlefield periodically
@@ -154,8 +184,8 @@ public class Server extends Node implements java.io.Serializable{
 					//System.out.println(time);
 					if(i==0)
 					{
-						server.setPendingActions("1 2", new LogInfo("192.","move","0","0", time));
-						server.setPendingActions("1 3", new LogInfo("193.","move","0","0", time));
+					//	server.setPendingActions("1 2", new LogInfo("192.","move","0","0", time));
+					//	server.setPendingActions("1 3", new LogInfo("193.","move","0","0", time));
 						i++;
 					}
 					
@@ -222,20 +252,39 @@ public class Server extends Node implements java.io.Serializable{
 	}
 	
 
+	public boolean startGame(){
+		//TODO: send broadcast Ping to Servers
+		boolean startGame=false;
+		while(!startGame){
+			try {
+				Thread.sleep(Constants.SERVER2SERVER_TIMEOUT/10);
+				break;
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			if(Server.otherServerExists)
+				return false;
+		}
+		//timeout reached
+			return true;
+
+	}
+	
+	
 	
 	/*----------------------------------------------------
 				GETTERS AND SETTERS
 	 ----------------------------------------------------		
 	*/
 
-	public HashMap<Node,ClientPlayerInfo> getClientList() {
+	public static HashMap<Node,ClientPlayerInfo> getClientList() {
 		return clientList;
 	}
 
 	public synchronized void putToClientList(ClientPlayerInfo clientPlayerInfo) {
 		Node node = new Node(clientPlayerInfo.getName(),
 											clientPlayerInfo.getIP());
-		this.getClientList().put(node, clientPlayerInfo);
+		Server.getClientList().put(node, clientPlayerInfo);
 		System.out.println("Server: adding new Client: unitID="+ clientPlayerInfo.getUnitID()+
 								"clientIP= "+ clientPlayerInfo.getIP());
 	}
@@ -277,6 +326,11 @@ public class Server extends Node implements java.io.Serializable{
 		return ValidActions;
 	}
 
-	
+
+
+	public BlockingQueue<LogInfo> getValidBlockQueue() {
+		return validBlockQueue;
+	}
+
 
 }

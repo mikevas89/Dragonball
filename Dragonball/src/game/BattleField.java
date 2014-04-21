@@ -1,6 +1,9 @@
 package game;
 
 import java.util.ArrayList;
+import java.util.ListIterator;
+
+import Node.Server;
 
 
 
@@ -175,9 +178,18 @@ public class BattleField  implements java.io.Serializable{
 		if (unitToRemove == null)
 			return; // There was no unit here to remove
 		map[x][y] = null;
-		unitToRemove.disconnect();
 		units.remove(unitToRemove);
 	}
+	
+	public synchronized void removeUnit(int x, int y,ListIterator<Unit> it)
+	{
+		Unit unitToRemove = this.getUnit(x, y);
+		if (unitToRemove == null)
+			return; // There was no unit here to remove
+		map[x][y] = null;
+		it.remove();
+	}
+
 
 	/**
 	 * Returns a new unique unit ID.
@@ -318,6 +330,9 @@ public class BattleField  implements java.io.Serializable{
 		return this.units;
 	}
 	
+	
+	
+	
 	public void healDamage(int x, int y, int healPoints)
 	{
 		BattleField.getBattleField().getUnit(x, y).adjustHitPoints(healPoints);
@@ -330,5 +345,20 @@ public class BattleField  implements java.io.Serializable{
 		if (unit != null)
 			unit.adjustHitPoints( -(Integer)damage );
 	}
+	
+	public Unit getUnitByUnitID(int UnitID)
+	{
+		for(Unit temp : this.getUnits())
+		{
+			if(temp.getUnitID()==UnitID)
+			{
+				return temp;
+			}
+		}
+		return null;
+		
+	}
+	
+	
 	
 }

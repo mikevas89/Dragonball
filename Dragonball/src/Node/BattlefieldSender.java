@@ -34,7 +34,7 @@ public class BattlefieldSender implements Runnable, java.io.Serializable {
 				e.printStackTrace();
 			}
 			//send to EACH client
-			for(Node client : this.serverOwner.getClientList().keySet()){
+			for(Node client : Server.getClientList().keySet()){
 				//get client's RMI instance
 				ClientServer clientComm = this.getClientReg(client); 
 				//create Message
