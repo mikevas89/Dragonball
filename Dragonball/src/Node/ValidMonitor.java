@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
 
 import structInfo.LogInfo;
+import structInfo.LogInfo.Action;
 import units.Player;
 import units.Unit;
 
@@ -29,6 +30,11 @@ public class ValidMonitor implements Runnable{
 			}
 			//TODO,TODO : check for rollback here? after this, the action is valid and it WILL BE played (targetUnitID may also be -1)
 			
+		    if(Server.getBattlefield().getUnit(newAction.getSenderX(), newAction.getSenderY()).getUnitID()!=newAction.getSenderUnitID() ||
+		    		Server.getBattlefield().getUnit(newAction.getTargetX(), newAction.getTargetY()).getUnitID()!=newAction.getTargetUnitID()){
+					    	System.err.println("Valid Monitor found an inconsistency from the updated Battlefield");
+							continue; 	
+		    }
 			Unit senderUnit= Server.getBattlefield().getUnitByUnitID(newAction.getSenderUnitID());
 			if(senderUnit==null){
 				System.err.println("ValidMonitor: Move from unit which is not in the BattleField");
@@ -67,6 +73,13 @@ public class ValidMonitor implements Runnable{
 			if((targetUnit instanceof Player) && (targetUnit.getHitPoints()<=0)){
 				Runnable messageSender = new UnSubscribeMessageSender(this.getServerOwner(),targetUnit);
 				new Thread(messageSender).start();
+				LogInfo playerDown = new LogInfo(Action.Removed,targetUnit.getUnitID(), targetUnit.getX(),targetUnit.getY(),
+													targetUnit.getType(targetUnit.getX(),targetUnit.getY()),
+													targetUnit.getUnitID(), 
+													targetUnit.getX(),targetUnit.getY(),
+													targetUnit.getType(targetUnit.getX(),targetUnit.getY()),
+													System.currentTimeMillis(), "0.0.0.0");
+				this.validActions.add(playerDown);
 			}
 			
 			

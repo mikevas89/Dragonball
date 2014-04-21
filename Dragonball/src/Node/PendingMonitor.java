@@ -1,8 +1,5 @@
 package Node;
 
-import java.util.ArrayList;
-
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -33,6 +30,15 @@ public class PendingMonitor implements Runnable {
 				    LogInfo action = (LogInfo)PendingActions.get(key);
 				    //print Pending actions
 				    action.toString();
+				    //check if the action can still be played according to an update of the battlefield
+				    
+				    if(Server.getBattlefield().getUnit(action.getSenderX(), action.getSenderY()).getUnitID()!=action.getSenderUnitID() ||
+				    		Server.getBattlefield().getUnit(action.getTargetX(), action.getTargetY()).getUnitID()!=action.getTargetUnitID()){
+				    				System.err.println("Pending Monitor found an inconsistency from the updated Battlefield");
+				    				iter.remove();
+				    				continue;
+				    }			    
+				    
 				    // check for the timeout!!
 				    Long curtime = System.currentTimeMillis();
 				    if(curtime - action.getTimestamp() > Constants.PENDING_TIMEOUT)
@@ -45,10 +51,6 @@ public class PendingMonitor implements Runnable {
 						}
 				    	//remove it from pending list
 				    	iter.remove();	
-				    	
-				    	//switch(Action)   case Move : 
-				    			//	Server.getBattlefield().moveUnit(Server.getBattlefield().getUnit(senderX, senderY), targetX, targetY);
-				    	//TODO: check after the action if the player has to be removed and send an unSubscribeMessage
 				    }
 				}
 				try {

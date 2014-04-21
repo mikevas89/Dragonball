@@ -3,7 +3,7 @@ package structInfo;
 public class LogInfo {
 
 	public enum Action {
-		Move, Heal, Damage
+		Move, Heal, Damage, Removed
 	}
 	
 
