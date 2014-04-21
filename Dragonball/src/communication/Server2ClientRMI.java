@@ -188,25 +188,31 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		System.out.println("Server: onActionMessageReceived");
 		Node client=new Node(message.getSender(),message.getSenderIP());
 
-		int unitID=Integer.parseInt(message.getContent().get("UnitID"));
+		int senderUnitID=Integer.parseInt(message.getContent().get("UnitID"));
 		int targetX=Integer.parseInt(message.getContent().get("x"));
 		int targetY=Integer.parseInt(message.getContent().get("y"));
 		//find sender unit among the units of BattleField
 		
-		Unit senderUnit = Server.getBattlefield().getUnitByUnitID(unitID);
+		Unit senderUnit = Server.getBattlefield().getUnitByUnitID(senderUnitID);
 		if(senderUnit==null){
-			System.err.println("Server: Action from not Client, invalid unitID="+ unitID);
+			System.err.println("Server: Action from not Client, invalid unitID="+ senderUnitID);
 			return;
 		}
 		
+		System.out.println("Server: onActionMessageReceived - Checking the targetType");
 		// Get what unit lies in the target square
 		Unit targetUnit = Server.getBattlefield().getUnit(targetX, targetY);
 		UnitType targetType;
+		int targetUnitID;
 		Action action = null;
-		if(targetUnit==null)
+		if(targetUnit==null){
 			targetType = UnitType.undefined;
-		else
+			targetUnitID=-1;
+		}
+		else{
 			targetType = targetUnit.getType(targetX, targetY);
+			targetUnitID = targetUnit.getUnitID();
+		}
 		
 		switch (targetType) {
 			case undefined:
@@ -219,9 +225,11 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 				action=Action.Damage;
 				break;
 		}
+		System.out.println("Server: onActionMessageReceived - targetType is "+ action);
 		//new pending move
-		LogInfo newPendingAction = new LogInfo(action, unitID, senderUnit.getX(),senderUnit.getY(),
-												senderUnit.getType(senderUnit.getX(),senderUnit.getY()), 
+		LogInfo newPendingAction = new LogInfo(action, senderUnitID, senderUnit.getX(),senderUnit.getY(),
+												senderUnit.getType(senderUnit.getX(),senderUnit.getY()),
+												targetUnitID, 
 												targetX, targetY, targetType,
 												message.getTimeIssuedFromServer(), message.getSenderIP());
 		System.out.println("New Action : "+ newPendingAction.toString());

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 import structInfo.Constants;
@@ -11,11 +12,11 @@ import structInfo.LogInfo;
 
 public class PendingMonitor implements Runnable {
 
-		HashMap<String, LogInfo> PendingActions;
+		Map<String, LogInfo> PendingActions;
 		private BlockingQueue<LogInfo> validBlockQueue;
 
 		
-		public PendingMonitor(HashMap<String, LogInfo> pendinglist, BlockingQueue<LogInfo> validBlockQueue)
+		public PendingMonitor(Map<String, LogInfo> pendinglist, BlockingQueue<LogInfo> validBlockQueue)
 		{
 			this.PendingActions=pendinglist;
 			this.validBlockQueue=validBlockQueue;

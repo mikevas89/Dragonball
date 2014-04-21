@@ -4,14 +4,16 @@ import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
 
 import structInfo.LogInfo;
+import units.Player;
 import units.Unit;
 
 public class ValidMonitor implements Runnable{
 
+	private Server serverOwner;
 	private ArrayList<LogInfo> validActions;
 	private BlockingQueue<LogInfo> validBlockQueue;
 	
-	public ValidMonitor(ArrayList<LogInfo> validActions, BlockingQueue<LogInfo> validBlockQueue){
+	public ValidMonitor(Server serverOwner, ArrayList<LogInfo> validActions, BlockingQueue<LogInfo> validBlockQueue){
 		this.setValidActions(validActions);
 		this.setValidBlockQueue(validBlockQueue);
 	}
@@ -25,26 +27,29 @@ public class ValidMonitor implements Runnable{
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			Unit senderUnit= Server.getBattlefield().getUnitByUnitID(newAction.getUnitID());
+			//TODO,TODO : check for rollback here? after this, the action is valid and it WILL BE played (targetUnitID may also be -1)
+			
+			Unit senderUnit= Server.getBattlefield().getUnitByUnitID(newAction.getSenderUnitID());
+			if(senderUnit==null){
+				System.err.println("ValidMonitor: Move from unit which is not in the BattleField");
+				continue;
+			}
 			switch (newAction.getTargetType()) {
 			case undefined:
 				// There is no unit in the square. Move the player to this square
 				Server.getBattlefield().moveUnit(senderUnit, newAction.getTargetX(), newAction.getTargetY());
-				//this.serverOwner.setPendingActions(x*y, new LogInfo(client.getIP(), LogInfo.Action.Move, x, y, message.getTimeIssuedFromServer()));
 				break;
 			case player:
 				// There is a player in the square, attempt a healing
 				Server.getBattlefield().healDamage(newAction.getTargetX(), newAction.getTargetY(), senderUnit.getAttackPoints());
-				//this.serverOwner.setPendingActions(x*y, new LogInfo(client.getIP(), LogInfo.Action.Heal, x, y, message.getTimeIssuedFromServer()));
 				break;
 			case dragon:
 				// There is a dragon in the square, attempt a dragon slaying
 				Server.getBattlefield().dealDamage(newAction.getTargetX(), newAction.getTargetY(), senderUnit.getAttackPoints());
-				//this.serverOwner.setPendingActions(x*y, new LogInfo(client.getIP(), LogInfo.Action.Damage, x, y, message.getTimeIssuedFromServer()));
 				break;
 		}
 			//logs the new Valisd Action
-			this.validActions.add(newAction);
+			this.validActions.add(newAction);			
 			
 			//broadcast to servers
 			new Thread(new Runnable(){
@@ -57,6 +62,12 @@ public class ValidMonitor implements Runnable{
 				}
 				
 			}).start();
+			
+			Unit targetUnit= Server.getBattlefield().getUnitByUnitID(newAction.getTargetUnitID());
+			if((targetUnit instanceof Player) && (targetUnit.getHitPoints()<=0)){
+				Runnable messageSender = new UnSubscribeMessageSender(this.getServerOwner(),targetUnit);
+				new Thread(messageSender).start();
+			}
 			
 			
 		}
@@ -76,6 +87,14 @@ public class ValidMonitor implements Runnable{
 
 	public void setValidBlockQueue(BlockingQueue<LogInfo> validBlockQueue) {
 		this.validBlockQueue = validBlockQueue;
+	}
+
+	public Server getServerOwner() {
+		return serverOwner;
+	}
+
+	public void setServerOwner(Server serverOwner) {
+		this.serverOwner = serverOwner;
 	}
 
 }

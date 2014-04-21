@@ -55,7 +55,7 @@ public class Client extends Node{
 	
 	
 	Timer serverTimeoutTimer;
-	volatile boolean running=true;
+	public volatile boolean running=true;
 
 	private static final long serialVersionUID = 1L;
 	private int unitID; //unique ID returned from Server
@@ -539,6 +539,7 @@ public class Client extends Node{
 		if(message.getSender().equals(this.serverConnected.getName())){
 			System.out.println("Client: onUnSubscribeFromServerMessageReceived");
 			this.running=false;	
+			serverTimeoutTimer.cancel();
 		}
 		
 	}

@@ -24,11 +24,13 @@ import units.Unit;
 public class DragonMaster implements Runnable {
 	
 	private BattleField battlefield;
+	private Server serverOwner;
 	private int dragonCount;
 	private volatile boolean runDragons; //server that moves the dragons
 	private volatile boolean createDragons; //server creates dragons
 	
-	public DragonMaster(BattleField battlefield, int dragonCount, boolean runDragons,boolean createDragons) {
+	public DragonMaster(Server serverOwner, BattleField battlefield, int dragonCount, boolean runDragons,boolean createDragons) {
+		this.setServerOwner(serverOwner);
 		this.battlefield=battlefield;
 		this.dragonCount=dragonCount;
 		this.setRunDragons(runDragons);
@@ -139,9 +141,11 @@ public class DragonMaster implements Runnable {
 							unit.getAttackPoints());
 					break;
 				}
-				//send unsubscribe message
-				Runnable messageSender = new MessageSender(targetUnit);
-				new Thread(messageSender).start();
+				//send unsubscribe message when one Player is hit
+				if(targetUnit instanceof Player && targetUnit.getHitPoints() < targetUnit.getMaxHitPoints()){
+					Runnable messageSender = new UnSubscribeMessageSender(this.getServerOwner(),targetUnit);
+					new Thread(messageSender).start();
+				}
 			
 			}
 		}
@@ -174,6 +178,14 @@ public class DragonMaster implements Runnable {
 
 	public void setCreateDragons(boolean createDragons) {
 		this.createDragons = createDragons;
+	}
+
+	public Server getServerOwner() {
+		return serverOwner;
+	}
+
+	public void setServerOwner(Server serverOwner) {
+		this.serverOwner = serverOwner;
 	}
 	
 

@@ -14,7 +14,9 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -42,8 +44,8 @@ public class Server extends Node implements java.io.Serializable{
 	public static final int TIME_BETWEEN_PLAYER_LOGIN = 5000; // In milliseconds
 	
 	private static BattleField battlefield; 
-	private HashMap<String,LogInfo> PendingActions; //pending moves
-	private ArrayList<LogInfo> ValidActions; //log ofthe valid actions
+	private Map<String, LogInfo> PendingActions; //pending moves
+	private ArrayList<LogInfo> ValidActions; //log of the valid actions
 	private final BlockingQueue<LogInfo> validBlockQueue;//intermediate between valid and pending
 	
 	public volatile static boolean killServer = false;
@@ -57,7 +59,7 @@ public class Server extends Node implements java.io.Serializable{
 		super();
 		serverList = new ArrayList<ServerInfo>();
 		clientList= new HashMap<Node,ClientPlayerInfo>(); //list of clients connected to that server
-		PendingActions= new HashMap<String, LogInfo>();   // list of pending action
+		PendingActions= Collections.synchronizedMap(new HashMap<String, LogInfo>());   // list of pending action
 		ValidActions= new ArrayList<LogInfo>();   // list of valid actions
 		validBlockQueue = new LinkedBlockingQueue<>();
 	}
@@ -140,7 +142,7 @@ public class Server extends Node implements java.io.Serializable{
 				DragonMaster creation (which creates all dragons)
 				----------------------------------------------------		
 				 */
-				Runnable dragonmaster = new DragonMaster(battlefield,DRAGON_COUNT,runDragons,startDragons);
+				Runnable dragonmaster = new DragonMaster(server,battlefield,DRAGON_COUNT,runDragons,startDragons);
 				new Thread(dragonmaster).start();
 				
 
@@ -155,7 +157,7 @@ public class Server extends Node implements java.io.Serializable{
 						Create thread for validating the pending action list
 				----------------------------------------------------		
 				*/
-				Runnable validMonitor = new ValidMonitor(server.getValidActions(),server.getValidBlockQueue());
+				Runnable validMonitor = new ValidMonitor(server,server.getValidActions(),server.getValidBlockQueue());
 				new Thread(validMonitor).start();
 				
 				/*----------------------------------------------------
@@ -308,7 +310,7 @@ public class Server extends Node implements java.io.Serializable{
 	}
 	
 	
-	public HashMap<String, LogInfo> getPendingActions() {
+	public Map<String, LogInfo> getPendingActions() {
 		return PendingActions;
 	}
 	//	public synchronized void setPendingActions(int key,LogInfo value) {
@@ -320,13 +322,9 @@ public class Server extends Node implements java.io.Serializable{
 		PendingActions.remove(key);;
 	}
 
-
-
 	public ArrayList<LogInfo> getValidActions() {
 		return ValidActions;
 	}
-
-
 
 	public BlockingQueue<LogInfo> getValidBlockQueue() {
 		return validBlockQueue;
