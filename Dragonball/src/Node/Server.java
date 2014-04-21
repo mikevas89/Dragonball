@@ -29,6 +29,7 @@ import structInfo.ServerInfo;
 import units.Player;
 import units.Unit;
 import Node.Node;
+import communication.ClientRMI;
 import communication.Server2ClientRMI;
 import communication.Server2ServerRMI;
 
@@ -67,43 +68,8 @@ public class Server extends Node implements java.io.Serializable{
 		ValidActions= new ArrayList<LogInfo>();   // list of valid actions
 		validBlockQueue = new LinkedBlockingQueue<>();
 		
-		//getting a unique id for every server
-		int numServer = -1;
-		String line = null;
-		BufferedReader reader = null;
-		try {
-			reader = new BufferedReader(new FileReader("Serverid.txt"));
-			try {
-				line = reader.readLine();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			if (line == null) {
-				numServer = 0;
-			} else {
-				numServer = Integer.parseInt(line);
-			}
-		} catch (FileNotFoundException e) {
-			numServer = 0;
-		} finally {
-			if (reader != null)
-				try {
-					reader.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-		}
-
-		BufferedWriter writer = null;
-		try {
-			writer = new BufferedWriter(new FileWriter("Serverid.txt"));
-			writer.write(String.valueOf(numServer + 1));
-		} finally {
-			if (writer != null) {
-				writer.flush();
-				writer.close();
-			}
-		}
+		int numServer= this.getUniqueIdForName("ServerID.txt");
+		
 		//unique name of Client
 		this.setName("Server"+ String.valueOf(numServer));
 		System.out.println("Server Name: "+ this.getName());
@@ -130,8 +96,23 @@ public class Server extends Node implements java.io.Serializable{
 				} catch (IOException e2) {
 					e2.printStackTrace();
 				}
+				
+				
+				//Server RMI for Server Communication to port 1100
+				
+				Server2ServerRMI serverServerComm =null;
+				try {
+					serverServerComm = new Server2ServerRMI(server);
+				} catch (RemoteException e2) {
+					e2.printStackTrace();
+				}
+				
+				if(!createServerServerRegAndBind(server,serverServerComm))
+					bindInExistingServerServerRegistry(server, serverServerComm);
+				
+				
 		 		
-		 		//Server RMI for Client communication
+		 		//Server RMI for Client communication to port 1099
 		 		Server2ClientRMI serverComm = null;
 				try {
 					serverComm = new Server2ClientRMI(server);
@@ -140,34 +121,8 @@ public class Server extends Node implements java.io.Serializable{
 				}
 				server.createServerClientReg(server,serverComm);
 				
-
-		 				
-		 		File file = new File("src/Servers.txt");
-				BufferedReader reader = null;
-				int j=0;
-
-				try {
-				    reader = new BufferedReader(new FileReader(file));
-				    String text = null;
-
-				    while ((text = reader.readLine()) != null) {
-				    	String[] parts = text.split(" ");
-				    	if(!server.getName().equals(parts[0]))
-				    			server.putToServerList(new ServerInfo(parts[0], parts[1], ++j,false));
-				    }
-				    
-				} catch (FileNotFoundException e) {
-				    e.printStackTrace();
-				} catch (IOException e) {
-				    e.printStackTrace();
-				} finally {
-				    try {
-				        if (reader != null) {
-				            reader.close();
-				        }
-				    } catch (IOException e) {
-				    }
-				}
+				//read server List
+				server.readServers("Servers.txt");
 
 				//print out the list
 				server.printlist();
@@ -266,8 +221,52 @@ public class Server extends Node implements java.io.Serializable{
 	}
 
 	
+	
+	
 	/*---------------------------------------------------
-	 * ESTABLISH SERVER RMI REGISTRY
+	 * ESTABLISH SERVER SERVER RMI REGISTRY
+	 ----------------------------------------------------		
+	*/
+	
+	public static boolean bindInExistingServerServerRegistry(Node node, Server2ServerRMI comm)
+	{
+		System.out.println("bindInExistingServerServerRegistry");
+		Registry myRegistry;
+		try {
+			myRegistry = LocateRegistry.getRegistry(Constants.SERVER_SERVER_RMI_PORT);
+			myRegistry.bind(node.getName(), comm); // bind with their names
+			System.out.println("bindInExistingServerServerRegistry completed");
+			return true;
+		} catch (RemoteException e) {
+			return false;
+		} catch (AlreadyBoundException e) {
+			return false;
+		}
+	}
+	
+	public static boolean createServerServerRegAndBind(Node node, Server2ServerRMI comm) {  //server creates its Registry entry
+		
+		System.out.println("createServerServerRegistryAndBind");
+		Registry myRegistry;
+		try {
+			myRegistry = LocateRegistry.createRegistry(Constants.SERVER_SERVER_RMI_PORT);
+			myRegistry.rebind(node.getName(), comm); // server's name
+			System.out.println("createServerServerRegistryAndBind completed");
+			return true;
+		} catch (RemoteException e) {
+			System.out.println("createServerServerRegistryAndBind failed");
+			//e.printStackTrace();
+			return false;
+		}
+		//System.out.println(this.getName()+ " is up and running for Server/Server Com!");
+	}
+	
+	
+	
+	
+	
+	/*---------------------------------------------------
+	 * ESTABLISH SERVER CLIENT RMI REGISTRY
 	 ----------------------------------------------------		
 	*/
 	
@@ -287,21 +286,7 @@ public class Server extends Node implements java.io.Serializable{
 		System.out.println(this.getName()+ " is up and running for Server/Client Com!");
 	}
 	
-	public void createServerServerReg(Node node, Server2ServerRMI comm) {  //server creates its Registry entry
-		
-		Registry serverRegistry = null;
-		try {
-			serverRegistry = LocateRegistry.createRegistry(Constants.SERVER_SERVER_RMI_PORT);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
-		try {
-			serverRegistry.bind(this.getName(), comm );
-		} catch (RemoteException | AlreadyBoundException e) {
-			e.printStackTrace();
-		} //server's name
-		System.out.println(this.getName()+ " is up and running for Server/Server Com!");
-	}
+	
 	
 	
 	public int createPlayer(){
@@ -339,6 +324,77 @@ public class Server extends Node implements java.io.Serializable{
 		//timeout reached
 			return true;
 
+	}
+	
+	public int getUniqueIdForName(String fname) throws IOException{
+		//getting a unique id for every server
+				int numServer = -1;
+				String line = null;
+				BufferedReader reader = null;
+				try {
+					reader = new BufferedReader(new FileReader(fname));
+					try {
+						line = reader.readLine();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					if (line == null) {
+						numServer = 0;
+					} else {
+						numServer = Integer.parseInt(line);
+					}
+				} catch (FileNotFoundException e) {
+					numServer = 0;
+				} finally {
+					if (reader != null)
+						try {
+							reader.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+				}
+
+				BufferedWriter writer = null;
+				try {
+					writer = new BufferedWriter(new FileWriter(fname));
+					writer.write(String.valueOf(numServer + 1));
+				} finally {
+					if (writer != null) {
+						writer.flush();
+						writer.close();
+					}
+				}
+				return numServer;
+	}
+	
+	public void readServers(String fname){
+		
+ 		File file = new File(fname);
+		BufferedReader reader = null;
+		int j=0;
+
+		try {
+		    reader = new BufferedReader(new FileReader(file));
+		    String text = null;
+
+		    while ((text = reader.readLine()) != null) {
+		    	String[] parts = text.split(" ");
+		    	if(!this.getName().equals(parts[0]))
+		    			Server.putToServerList(new ServerInfo(parts[0], parts[1], ++j,false));
+		    }
+		    
+		} catch (FileNotFoundException e) {
+		    e.printStackTrace();
+		} catch (IOException e) {
+		    e.printStackTrace();
+		} finally {
+		    try {
+		        if (reader != null) {
+		            reader.close();
+		        }
+		    } catch (IOException e) {
+		    }
+		}
 	}
 	
 	

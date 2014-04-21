@@ -7,6 +7,7 @@ import interfaces.ClientServer;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -21,11 +22,14 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import structInfo.ClientPlayerInfo;
 import structInfo.Constants;
 import structInfo.Directions;
+import structInfo.ServerInfo;
 import structInfo.UnitType;
 import units.*;
 import communication.ClientRMI;
@@ -60,52 +64,23 @@ public class Client extends Node{
 	private static final long serialVersionUID = 1L;
 	private int unitID; //unique ID returned from Server
 	private static  BattleField battlefield;
+	
+	private static HashMap<Node, ServerInfo> serverList;
+	
+
 
 
 	public Client() throws IOException{
 		super();
+		serverList = new HashMap<Node, ServerInfo>();
 		
-		//getting a unique id for every client
-		int numClient = -1;
-		String line = null;
-		BufferedReader reader = null;
-		try {
-			reader = new BufferedReader(new FileReader("id.txt"));
-			try {
-				line = reader.readLine();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			if (line == null) {
-				numClient = 0;
-			} else {
-				numClient = Integer.parseInt(line);
-			}
-		} catch (FileNotFoundException e) {
-			numClient = 0;
-		} finally {
-			if (reader != null)
-				try {
-					reader.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-		}
-
-		BufferedWriter writer = null;
-		try {
-			writer = new BufferedWriter(new FileWriter("id.txt"));
-			writer.write(String.valueOf(numClient + 1));
-		} finally {
-			if (writer != null) {
-				writer.flush();
-				writer.close();
-			}
-		}
+		int numClient = this.getUniqueIdForName("Clientid.txt");
 		//unique name of Client
 		this.setName("danteClient"+ String.valueOf(numClient));
 		System.out.println("Client Name: "+ this.getName());
 		this.isSubscribed=false;
+		
+		this.readServers("Servers.txt");
 	}
 	
 	
@@ -131,8 +106,8 @@ public class Client extends Node{
 			public void run() {
 				
 				Directions direction;
-				UnitType adjacentUnitType;
 				int targetX = 0, targetY = 0;
+				UnitType adjacentUnitType;
 				
 				
 				Client client = null;
@@ -156,6 +131,8 @@ public class Client extends Node{
 				}
 				
 				client.setIP(clientIP.getHostAddress());
+				
+				//create Client's RMI
 				ClientRMI commClient = null;
 				try {
 					commClient = new ClientRMI(client);
@@ -174,16 +151,16 @@ public class Client extends Node{
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
-				server.setName("dante");
+				 //take the first Server Name from the server list
+			//	Node firstServer= (Node) Client.getServerList().keySet().toArray()[0];
+			//	server.setName(Client.getServerList().get(firstServer).getName());
+			//	server.setIP(Client.getServerList().get(firstServer).getIP());
+				//put names for testing
+				server.setName("Server0");
+				server.setIP("127.0.0.1");
 				
-				InetAddress IP = null;
-				try {
-					IP = InetAddress.getLocalHost();
-				} catch (UnknownHostException e) {
-					e.printStackTrace();
-				}
-				server.setIP(IP.getHostAddress());
 				System.out.println(server.getIP());
+				
 				
 				//setup connection to server registry
 				ClientServer serverComm;
@@ -191,12 +168,7 @@ public class Client extends Node{
 
 				 //mentions to which server is connected
 				client.setServerConnected(server); 
-				
-				//TODO: constants server names
-				//TODO: build message
 
-				
-				
 				
 				ClientServerMessage subscribeMessage= new ClientServerMessage(
 												MessageType.Subscribe2Server,
@@ -210,20 +182,6 @@ public class Client extends Node{
 				} catch (RemoteException | NotBoundException e) {
 					e.printStackTrace();
 				}
-				/*
-				Player unitTest= new Player(1,1);
-				message.setMessageUnit(unitTest);
-				
-				try {
-					serverComm.onMessageReceived(message);
-				} catch (RemoteException e) {
-					e.printStackTrace();
-				} catch (NotBoundException e) {
-					e.printStackTrace();
-				}
-				*/
-				
-
 				
 				System.out.println("Client is waiting");
 				while(client.running){
@@ -333,6 +291,16 @@ public class Client extends Node{
 	}
 	
 	
+
+	
+	
+	
+	
+	/*---------------------------------------------------
+	 * ESTABLISH CLIENT RMI REGISTRY
+	 ----------------------------------------------------		
+	*/
+	
 	public static boolean bindInExistingRegistry(Node node, ClientRMI comm)
 	{
 		System.out.println("bindInExistingRegistry");
@@ -366,36 +334,6 @@ public class Client extends Node{
 	}
 	
 	
-	
-	
-	/*---------------------------------------------------
-	 * ESTABLISH CLIENT RMI REGISTRY
-	 ----------------------------------------------------		
-	*/
-	
-	//create client Registry
-	public void createClientReg(Node node, ClientRMI comm){  //server creates its Registry entry
-		
-		Registry clientRegistry = null;
-		try {
-			clientRegistry = LocateRegistry.createRegistry(Constants.SERVER_CLIENT_RMI_PORT);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
-		try {
-			clientRegistry.bind(node.getName(), comm );
-		} catch (AccessException e) {
-			e.printStackTrace();
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		} catch (AlreadyBoundException e) {
-			e.printStackTrace();
-		} //server's name
-		
-		System.out.println(node.getName()+ " is up and running!");
-	}
-	
-	
 	//contact with server
 	public ClientServer getServerReg(Node server)
 	{
@@ -417,6 +355,80 @@ public class Client extends Node{
 		
 		return serverCommunication;
 	}
+	
+	public int getUniqueIdForName(String fname) throws IOException{
+		//getting a unique id for every server
+				int numClient = -1;
+				String line = null;
+				BufferedReader reader = null;
+				try {
+					reader = new BufferedReader(new FileReader(fname));
+					try {
+						line = reader.readLine();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					if (line == null) {
+						numClient = 0;
+					} else {
+						numClient = Integer.parseInt(line);
+					}
+				} catch (FileNotFoundException e) {
+					numClient = 0;
+				} finally {
+					if (reader != null)
+						try {
+							reader.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+				}
+
+				BufferedWriter writer = null;
+				try {
+					writer = new BufferedWriter(new FileWriter(fname));
+					writer.write(String.valueOf(numClient + 1));
+				} finally {
+					if (writer != null) {
+						writer.flush();
+						writer.close();
+					}
+				}
+				return numClient;
+	}
+	//read Servers list
+	public void readServers(String fname){
+		
+ 		File file = new File(fname);
+		BufferedReader reader = null;
+		int j=0;
+
+		try {
+		    reader = new BufferedReader(new FileReader(file));
+		    String text = null;
+
+		    while ((text = reader.readLine()) != null) {
+		    	String[] parts = text.split(" ");
+		    	if(!this.getName().equals(parts[0]))
+		    			Client.putToServerList(new ServerInfo(parts[0], parts[1], ++j,false));
+		    }
+		    
+		} catch (FileNotFoundException e) {
+		    e.printStackTrace();
+		} catch (IOException e) {
+		    e.printStackTrace();
+		} finally {
+		    try {
+		        if (reader != null) {
+		            reader.close();
+		        }
+		    } catch (IOException e) {
+		    }
+		}
+	}
+	
+	
+	
 	
 
 	/* ----------------------------------------------------		
@@ -591,6 +603,16 @@ public class Client extends Node{
 					GETTERS AND SETTERS
 	----------------------------------------------------		
 	 */
+	
+	public static HashMap<Node,ServerInfo> getServerList() {
+		return serverList;
+	}
+	
+	public synchronized static void putToServerList(ServerInfo serverinfo) {
+		Node node = new Node(serverinfo.getName(),
+				serverinfo.getIP());
+		Client.getServerList().put(node, serverinfo);
+	}
 
 	public int getUnitID() {
 		return this.unitID;
