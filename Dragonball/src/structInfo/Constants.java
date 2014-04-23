@@ -19,6 +19,8 @@ public class Constants {
 	public static final long BROADCAST_PERIOD_TO_CLIENTS = CLIENT_PERIOD_ACTION/2;
 	public static final long PENDING_TIMEOUT=1000;
 	public static final long CHECK_PENDING_LIST_PERIOD=1000;
+	public static final long CLIENT2SERVER_PING_PERIOD=1000;
 	
-	public static final long SERVER2SERVER_TIMEOUT = 2000;
+	public static final long SERVER2SERVER_PING_PERIOD=20000;
+	public static final long SERVER2SERVER_TIMEOUT = 7000;
 }

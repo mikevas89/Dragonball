@@ -13,9 +13,9 @@ public class ServerServerMessage extends Message implements Serializable{
 	
 	private static final long serialVersionUID = 1L;
 	
-	private Unit messageUnit;
 	private BattleField battlefield;
 	private LogInfo actionToBeChecked;
+	private int numClients;
 	
 	
 	public ServerServerMessage(){
@@ -31,12 +31,7 @@ public class ServerServerMessage extends Message implements Serializable{
 	
 
 	
-	public Unit getMessageUnit() {
-		return messageUnit;
-	}
-	public void setMessageUnit(Unit messageUnit) {
-		this.messageUnit = messageUnit;
-	}
+
 	public BattleField getBattlefield() {
 		return battlefield;
 	}
@@ -48,6 +43,14 @@ public class ServerServerMessage extends Message implements Serializable{
 	}
 	public void setActionToBeChecked(LogInfo actionToBeChecked) {
 		this.actionToBeChecked = actionToBeChecked;
+	}
+
+	public int getNumClients() {
+		return numClients;
+	}
+
+	public void setNumClients(int numClients) {
+		this.numClients = numClients;
 	}
 
 

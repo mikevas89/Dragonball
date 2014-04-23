@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import structInfo.ClientPlayerInfo;
 import structInfo.Constants;
 import structInfo.Directions;
 import structInfo.ServerInfo;
@@ -152,11 +151,11 @@ public class Client extends Node{
 					e1.printStackTrace();
 				}
 				 //take the first Server Name from the server list
-			//	Node firstServer= (Node) Client.getServerList().keySet().toArray()[0];
-			//	server.setName(Client.getServerList().get(firstServer).getName());
-			//	server.setIP(Client.getServerList().get(firstServer).getIP());
+				//Node firstServer= (Node) Client.getServerList().keySet().toArray()[0];
+				//server.setName(Client.getServerList().get(firstServer).getName());
+				//server.setIP(Client.getServerList().get(firstServer).getIP());
 				//put names for testing
-				server.setName("Server0");
+				server.setName("Server2");
 				server.setIP("127.0.0.1");
 				
 				System.out.println(server.getIP());
@@ -409,8 +408,8 @@ public class Client extends Node{
 
 		    while ((text = reader.readLine()) != null) {
 		    	String[] parts = text.split(" ");
-		    	if(!this.getName().equals(parts[0]))
-		    			Client.putToServerList(new ServerInfo(parts[0], parts[1], ++j,false));
+		    	//if(!this.getName().equals(parts[0]))
+		    	Client.putToServerList(new ServerInfo(parts[0], parts[1], ++j,false));
 		    }
 		    
 		} catch (FileNotFoundException e) {
@@ -539,7 +538,7 @@ public class Client extends Node{
 			
 			//set timers, sets a timer for sending the Ping
 			serverTimeoutTimer = new Timer(true);
-			serverTimeoutTimer.scheduleAtFixedRate(new SchedulingTimer(),0,30000); 
+			serverTimeoutTimer.scheduleAtFixedRate(new SchedulingTimer(),0,Constants.CLIENT2SERVER_PING_PERIOD); 
 		}	
 	}
 	

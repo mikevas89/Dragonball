@@ -11,8 +11,10 @@ public enum MessageType {
 	//more types are put here
 	
 	ServerServerPing,
+	ServerSubscribedAck,
 	//Subscribe2Server,
 	CheckPending,
-	DeleteFromValid
+	DeleteFromValid,
 	//GetBattlefield
+	RequestBattlefield
 }

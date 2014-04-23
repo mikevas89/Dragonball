@@ -38,11 +38,13 @@ public class Player extends Unit implements Serializable {
 	 */
 	
 	
-	public Player(int x, int y,BattleField battlefield) {
+	public Player(int x, int y,BattleField battlefield,int serverID) {
 		/* Initialize the hitpoints and attackpoints */
 		super((int)(Math.random() * (MAX_HITPOINTS - MIN_HITPOINTS) + MIN_HITPOINTS), 
 				(int)(Math.random() * (MAX_ATTACKPOINTS - MIN_ATTACKPOINTS) + MIN_ATTACKPOINTS),
 				battlefield);
+		//serverID+unitID
+		this.setUnitID(Integer.parseInt(String.valueOf(serverID)+String.valueOf(this.getUnitID())));
 
 		/* Create a random delay */
 		timeBetweenTurns = (int)(Math.random() * (MAX_TIME_BETWEEN_TURNS - MIN_TIME_BETWEEN_TURNS)) + MIN_TIME_BETWEEN_TURNS;

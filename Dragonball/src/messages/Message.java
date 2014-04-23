@@ -31,6 +31,7 @@ public class Message implements java.io.Serializable{
 		this.setSenderIP(senderIP);
 		this.setReceiver(receiver);
 		this.setReceiverIP(receiverIP);
+		this.setTimeIssuedFromServer((long) 0);
 		
 	}
 	

@@ -3,6 +3,8 @@ package Node;
 import game.BattleField;
 import game.BattleFieldViewer;
 
+import interfaces.ServerServer;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -10,7 +12,10 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.rmi.AlreadyBoundException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -18,9 +23,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import messages.MessageType;
+import messages.ServerServerMessage;
 
 import structInfo.ClientPlayerInfo;
 import structInfo.Constants;
@@ -29,7 +39,7 @@ import structInfo.ServerInfo;
 import units.Player;
 import units.Unit;
 import Node.Node;
-import communication.ClientRMI;
+
 import communication.Server2ClientRMI;
 import communication.Server2ServerRMI;
 
@@ -56,6 +66,10 @@ public class Server extends Node implements java.io.Serializable{
 	public volatile static boolean killServer = false;
 	
 	public volatile static boolean otherServerExists=false;
+	
+	private Timer serverServerTimeoutTimer;
+	private static ServerInfo myInfo;
+	private static int myServerID;
 
 
 	public int test=0;
@@ -72,6 +86,13 @@ public class Server extends Node implements java.io.Serializable{
 		
 		//unique name of Client
 		this.setName("Server"+ String.valueOf(numServer));
+		this.setIP("127.0.0.1");
+		
+		
+		//set timers, sets a timer for sending the Ping to other Alive Servers
+		this.setServerServerTimeoutTimer(new Timer(true));
+		this.getServerServerTimeoutTimer().scheduleAtFixedRate(new SchedulingTimer(),0,Constants.SERVER2SERVER_PING_PERIOD); 
+
 		System.out.println("Server Name: "+ this.getName());
 
 }
@@ -113,36 +134,45 @@ public class Server extends Node implements java.io.Serializable{
 				
 		 		
 		 		//Server RMI for Client communication to port 1099
-		 		Server2ClientRMI serverComm = null;
+		 		Server2ClientRMI serverClientComm = null;
 				try {
-					serverComm = new Server2ClientRMI(server);
+					serverClientComm = new Server2ClientRMI(server);
 				} catch (RemoteException e1) {
 					e1.printStackTrace();
 				}
-				server.createServerClientReg(server,serverComm);
+				if(!Server.createServerClientRegistryAndBind(server,serverClientComm))
+					bindInExistingServerClientRegistry(server, serverClientComm);
+				
 				
 				//read server List
 				server.readServers("Servers.txt");
 
 				//print out the list
-				server.printlist();
+				//server.printlist();
+				
+				//create my Info 
+				myInfo = new ServerInfo(server.getName(),server.getIP(),Server.getMyServerID(),true);
+				if(Server.getClientList().size()>0){
+					myInfo.setNumClients(Server.getClientList().size());
+					myInfo.setRunsGame(true);
+				}
+
 				
 				boolean startDragons,runDragons;
 				
 				if (server.startGame()) {
 					// create Game
-					battlefield = BattleField.getBattleField();
+					//battlefield = BattleField.getBattleField();
 					//create Dragons
 					runDragons=true;
 					startDragons=true;
+					Server.getMyInfo().setRunsGame(true);
 				}
 				else{
 					runDragons=false;
 					startDragons=false;
 				}
-					
-				
-		 		
+				battlefield = BattleField.getBattleField();
 
 				new BattleFieldViewer(battlefield);
 				
@@ -185,12 +215,13 @@ public class Server extends Node implements java.io.Serializable{
 				while(!Server.killServer)
 				{
 					System.out.println("Server is running...");
+					Server.printlist();
 					try {
 						Thread.sleep(10000);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					Long time = System.currentTimeMillis();
+					//Long time = System.currentTimeMillis();
 					//System.out.println(time);
 					if(i==0)
 					{
@@ -213,11 +244,14 @@ public class Server extends Node implements java.io.Serializable{
 			
 	}
 	
-	public void printlist()
+	public static void printlist()
 	{	System.out.println("Printing server list:");
 		for(Node item: Server.getServerList().keySet()){
-			System.out.println(item.getName()+"   "+item.getIP());			
+			System.out.println(item.getName()+"   "+item.getIP());
+			System.out.println(Server.getServerList().get(item).getServerID()+" Alive:"+ Server.getServerList().get(item).isAlive()
+								+" TimeStamp:"+ Server.getServerList().get(item).getTimeLastPingSent());
 		}
+		System.out.println("Leaving from server list:");
 	}
 
 	
@@ -270,6 +304,40 @@ public class Server extends Node implements java.io.Serializable{
 	 ----------------------------------------------------		
 	*/
 	
+	
+	public static boolean bindInExistingServerClientRegistry(Node node, Server2ClientRMI comm)
+	{
+		System.out.println("bindInExistingServerClientRegistry");
+		Registry myRegistry;
+		try {
+			myRegistry = LocateRegistry.getRegistry(Constants.SERVER_CLIENT_RMI_PORT);
+			myRegistry.bind(node.getName(), comm); // bind with their names
+			System.out.println("bindInExistingServerClientRegistry completed");
+			return true;
+		} catch (RemoteException e) {
+			return false;
+		} catch (AlreadyBoundException e) {
+			return false;
+		}
+	}
+	
+	public static boolean createServerClientRegistryAndBind(Node node, Server2ClientRMI comm)
+	{
+		System.out.println("createServerClientRegistryAndBind");
+		Registry myRegistry;
+		try {
+			myRegistry = LocateRegistry.createRegistry(Constants.SERVER_CLIENT_RMI_PORT);
+			myRegistry.rebind(node.getName(), comm); // server's name
+			System.out.println("createServerClientRegistryAndBind completed");
+			return true;
+		} catch (RemoteException e) {
+			System.out.println("createServerClientRegistryAndBind failed");
+			//e.printStackTrace();
+			return false;
+		}
+	}
+	
+/*	
 	public void createServerClientReg(Node node, Server2ClientRMI comm) {  //server creates its Registry entry
 		
 		Registry serverRegistry = null;
@@ -286,7 +354,7 @@ public class Server extends Node implements java.io.Serializable{
 		System.out.println(this.getName()+ " is up and running for Server/Client Com!");
 	}
 	
-	
+	*/
 	
 	
 	public int createPlayer(){
@@ -301,28 +369,60 @@ public class Server extends Node implements java.io.Serializable{
 		if (battlefield.getUnit(x, y) != null) return -1;
 		
 		//create new Player
-		Player player = new Player(x,y,this.battlefield);
-		//return Unit's unitID
+		Player player = new Player(x,y,Server.battlefield,myInfo.getServerID());
+		//return unique Unit's serverID+unitID
 		return player.getUnitID();
 
 	}
 	
 
 	public boolean startGame(){
-		//TODO: send broadcast Ping to Servers
-		boolean startGame=false;
-		while(!startGame){
+		
+		System.out.println("Server: "+ Server.getMyInfo().getName()+" entered startGame");
+		//TODO: send broadcast Subscribe2Server to Servers
+		for (ServerInfo serverInfo : Server.getServerList().values()) {
+
+			ServerServerMessage subscribeServerMessage = new ServerServerMessage(
+									MessageType.Subscribe2Server,
+									Server.getMyInfo().getName(), Server.getMyInfo().getIP(),
+									serverInfo.getName(), serverInfo.getIP());
+			
+			// send the subscription message to the server
+			ServerServer serverComm = null;
+			serverComm = Server.getServerReg(new Node(serverInfo.getName(),
+					serverInfo.getIP()));
+			
+			if(serverComm == null) continue;
+			
+			System.out.println("Server: "+ myInfo.getName() + " sends Subscribe2Server to "+ serverInfo.getName());
+
 			try {
-				Thread.sleep(Constants.SERVER2SERVER_TIMEOUT/10);
-				break;
-			} catch (InterruptedException e) {
+				serverComm.onMessageReceived(subscribeServerMessage);
+			} catch (RemoteException e) {
+				e.printStackTrace();
+			} catch (NotBoundException e) {
 				e.printStackTrace();
 			}
-			if(Server.otherServerExists)
-				return false;
+
+		}
+
+		try {
+			Thread.sleep(Constants.SERVER2SERVER_TIMEOUT);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 		//timeout reached
-			return true;
+		//System.out.println("startGame : PrintList");
+		//this.printlist();
+		
+		for (ServerInfo serverInfo : Server.getServerList().values()) {
+			if(serverInfo.isAlive())
+				return false;
+		}
+		
+		//server is the first Running - should build the game
+		System.out.println("Server: "+ Server.getMyInfo().getName() + " STARTING THE GAME");
+		return true;
 
 	}
 	
@@ -339,12 +439,12 @@ public class Server extends Node implements java.io.Serializable{
 						e.printStackTrace();
 					}
 					if (line == null) {
-						numServer = 0;
+						numServer = 1;
 					} else {
 						numServer = Integer.parseInt(line);
 					}
 				} catch (FileNotFoundException e) {
-					numServer = 0;
+					numServer = 1;
 				} finally {
 					if (reader != null)
 						try {
@@ -381,6 +481,8 @@ public class Server extends Node implements java.io.Serializable{
 		    	String[] parts = text.split(" ");
 		    	if(!this.getName().equals(parts[0]))
 		    			Server.putToServerList(new ServerInfo(parts[0], parts[1], ++j,false));
+		    	else
+		    		Server.setMyServerID(++j);
 		    }
 		    
 		} catch (FileNotFoundException e) {
@@ -397,7 +499,85 @@ public class Server extends Node implements java.io.Serializable{
 		}
 	}
 	
+	public void recomputeBattleField(BattleField messageBattleField){
+		battlefield.copyListUnits(messageBattleField.getUnits());
+		battlefield.copyMap(messageBattleField.getMap());
+
+	}
 	
+	
+	/*----------------------------------------------------
+				PRIVATE SERVER COMMUNICATION METHODS
+	----------------------------------------------------		
+	 	*/
+	
+	public class SchedulingTimer extends TimerTask{
+		@Override
+		public void run() {
+			try {
+				sendServerServerPing();
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+			}			
+		}		
+	}
+	
+	//refresh the subscription time
+	public void sendServerServerPing() throws MalformedURLException {
+
+		for (ServerInfo serverInfo : Server.getServerList().values()) {
+			if (!serverInfo.isAlive())
+				continue;
+			ServerServerMessage pingMessage = new ServerServerMessage(
+					MessageType.ServerServerPing, this.getName(), this.getIP(),
+					serverInfo.getName(), serverInfo.getIP());
+
+			pingMessage.setNumClients(myInfo.getNumClients());
+			// send the subscription message to the server
+			ServerServer serverComm = null;
+			serverComm = Server.getServerReg(new Node(serverInfo.getName(),
+					serverInfo.getIP()));
+			
+			if(serverComm == null) continue;
+			
+			System.out.println("Server: "+ myInfo.getName() + " sends Ping to "+ serverInfo.getName());
+
+			try {
+				serverComm.onMessageReceived(pingMessage);
+			} catch (RemoteException e) {
+				e.printStackTrace();
+			} catch (NotBoundException e) {
+				e.printStackTrace();
+			}
+
+		}
+	}
+	
+		
+	public static ServerServer getServerReg(Node server)
+	{
+		ServerServer serverCommunication = null;
+		try {
+			serverCommunication = (ServerServer) 
+			Naming.lookup("rmi://"+server.getIP()+":"+String.valueOf(Constants.SERVER_SERVER_RMI_PORT)
+					+"/"+server.getName());
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (RemoteException e) {
+			//e.printStackTrace();
+			System.err.println("Server: "+ myInfo.getName()+" ServerRMI RemoteException error with server: "+ server.getName());
+			return null;
+		} catch (NotBoundException e) {
+			//e.printStackTrace();
+			System.err.println("Server: "+ myInfo.getName()+" ServerRMI NotBoundException error with server: "+ server.getName());
+			return null;
+		}		//getServerInfo returns from ServerList
+																//serverIp and serverName
+		System.out.println("getServerReg to "+ server.getName());
+		return serverCommunication;
+	}
+		
+		
 	
 	/*----------------------------------------------------
 				GETTERS AND SETTERS
@@ -419,7 +599,7 @@ public class Server extends Node implements java.io.Serializable{
 											clientPlayerInfo.getIP());
 		Server.getClientList().put(node, clientPlayerInfo);
 		System.out.println("Server: adding new Client: unitID="+ clientPlayerInfo.getUnitID()+
-								"clientIP= "+ clientPlayerInfo.getIP());
+								" clientIP= "+ clientPlayerInfo.getIP());
 	}
 	
 	public synchronized Unit getBattlefieldUnit(int x, int y)
@@ -459,6 +639,48 @@ public class Server extends Node implements java.io.Serializable{
 
 	public BlockingQueue<LogInfo> getValidBlockQueue() {
 		return validBlockQueue;
+	}
+
+
+
+
+	public Timer getServerServerTimeoutTimer() {
+		return serverServerTimeoutTimer;
+	}
+
+
+
+
+	public void setServerServerTimeoutTimer(Timer serverServerTimeoutTimer) {
+		this.serverServerTimeoutTimer = serverServerTimeoutTimer;
+	}
+
+
+
+
+	public static int getMyServerID() {
+		return myServerID;
+	}
+
+
+
+
+	public static void setMyServerID(int myServerID) {
+		Server.myServerID = myServerID;
+	}
+
+
+
+
+	public static ServerInfo getMyInfo() {
+		return myInfo;
+	}
+
+
+
+
+	public static void setMyInfo(ServerInfo myInfo) {
+		Server.myInfo = myInfo;
 	}
 
 
