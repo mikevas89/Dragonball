@@ -17,12 +17,12 @@ public class LogInfo {
 	private int targetY;
 	private UnitType targetType;
 	private Long timestamp;
-	private String senderIP;
+	private String senderName;
 	
 	
 	public LogInfo(Action action, int senderUnitID, int senderX, int senderY,
 			UnitType senderType, int targetUnitID, int targetX, int targetY,
-			UnitType targetType, Long timestamp, String senderIP) {
+			UnitType targetType, Long timestamp, String senderName) {
 		super();
 		this.action = action;
 		this.senderUnitID = senderUnitID;
@@ -34,7 +34,26 @@ public class LogInfo {
 		this.targetY = targetY;
 		this.targetType = targetType;
 		this.timestamp = timestamp;
-		this.senderIP = senderIP;
+		this.senderName = senderName;
+	}
+	@Override
+	public boolean equals(Object info)
+	{
+		System.err.println("onEqualsLogInfo");
+		if(this==info)
+			return true;
+		if(info==null)
+			return false;
+		if(getClass()!=info.getClass())
+			return false;
+		
+		LogInfo logInfo = (LogInfo)info;
+		if(this.senderUnitID != logInfo.senderUnitID || this.targetUnitID!= logInfo.targetUnitID ||
+				this.timestamp != logInfo.timestamp)
+					return false;
+		
+		return true;
+		
 	}
 
 
@@ -49,12 +68,12 @@ public class LogInfo {
 	}
 
 
-	public String getSenderIP() {
-		return senderIP;
+	public String getSenderName() {
+		return senderName;
 	}
 
-	public void setSenderIP(String senderIP) {
-		this.senderIP = senderIP;
+	public void setSenderName(String senderName) {
+		this.senderName = senderName;
 	}
 
 	public Action getAction() {

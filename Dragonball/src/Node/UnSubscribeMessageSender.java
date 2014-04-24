@@ -7,6 +7,7 @@ import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.Iterator;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -15,6 +16,8 @@ import messages.MessageType;
 
 import structInfo.ClientPlayerInfo;
 import structInfo.LogInfo;
+import units.Dragon;
+import units.Player;
 import units.Unit;
 
 public class UnSubscribeMessageSender implements Runnable{
@@ -39,12 +42,21 @@ public class UnSubscribeMessageSender implements Runnable{
 				it.remove();
 			}
 		}
+		//unsubscribe Dragon if he is dead
+		if(this.getUnit() instanceof Dragon){
+			 ListIterator<Unit> it =Server.getBattlefield().getUnits().listIterator();
+			 		while(it.hasNext()){ 
+			 			Unit unit= it.next();
+			 			if (unit instanceof Player) continue;
+			 			Server.getBattlefield().removeUnit(unit.getX(), unit.getY(), it);
+			 		}
+			 		return;
+		}
 		
 		//remove player from battlefield
 		//remove player from clientList
 		Iterator<Node> iter = Server.getClientList().keySet().iterator();
 		while(iter.hasNext()) {
-			
 			Node key = (Node)iter.next();
 		    ClientPlayerInfo info = (ClientPlayerInfo)Server.getClientList().get(key);
 			if(info.getUnitID()==unit.getUnitID()){

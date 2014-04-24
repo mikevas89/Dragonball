@@ -14,7 +14,9 @@ public enum MessageType {
 	ServerSubscribedAck,
 	//Subscribe2Server,
 	CheckPending,
-	DeleteFromValid,
+	PendingMoveInvalid,
+	
+	SendValidAction,
 	//GetBattlefield
 	RequestBattlefield
 }

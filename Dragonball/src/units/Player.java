@@ -45,6 +45,7 @@ public class Player extends Unit implements Serializable {
 				battlefield);
 		//serverID+unitID
 		this.setUnitID(Integer.parseInt(String.valueOf(serverID)+String.valueOf(this.getUnitID())));
+		System.out.println("New Player : UnitID: " + this.getUnitID() );
 
 		/* Create a random delay */
 		timeBetweenTurns = (int)(Math.random() * (MAX_TIME_BETWEEN_TURNS - MIN_TIME_BETWEEN_TURNS)) + MIN_TIME_BETWEEN_TURNS;

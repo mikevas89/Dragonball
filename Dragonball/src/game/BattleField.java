@@ -1,6 +1,9 @@
 package game;
 
 import java.util.ArrayList;
+
+import java.util.Collections;
+import java.util.List;
 import java.util.ListIterator;
 
 import Node.Server;
@@ -40,7 +43,7 @@ public class BattleField  implements java.io.Serializable{
 	public final static String serverID = "server";
 	public final static int MAP_WIDTH = 25;
 	public final static int MAP_HEIGHT = 25;
-	private ArrayList <Unit> units; 
+	private List <Unit> units; 
 
 	/**
 	 * Initialize the battlefield to the specified size 
@@ -52,7 +55,7 @@ public class BattleField  implements java.io.Serializable{
 		
 		synchronized (this) {
 			map = new Unit[width][height];
-			units = new ArrayList<Unit>();
+			units = Collections.synchronizedList(new ArrayList<Unit>());
 		}
 		
 	}
@@ -318,15 +321,16 @@ public class BattleField  implements java.io.Serializable{
 	public void copyMap(Unit[][] messageUnits){
 		this.map = messageUnits.clone();
 	}
-	public void copyListUnits(ArrayList<Unit> listUnits){
-		this.units= (ArrayList<Unit>) listUnits.clone();
+
+	public void copyListUnits(List<Unit> list){
+		this.units = Collections.synchronizedList(new ArrayList<Unit>(list));
 	}
 	
 	public Unit[][] getMap(){
 		return this.map;
 	}
 	
-	public ArrayList<Unit> getUnits(){
+	public List<Unit> getUnits(){
 		return this.units;
 	}
 	
@@ -357,6 +361,12 @@ public class BattleField  implements java.io.Serializable{
 		}
 		return null;
 		
+	}
+	
+	public void copyBattleField(BattleField messageBattleField){
+		
+		battlefield.copyListUnits(messageBattleField.getUnits());
+		battlefield.copyMap(messageBattleField.getMap());
 	}
 	
 	

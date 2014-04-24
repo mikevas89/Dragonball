@@ -16,26 +16,29 @@ import java.util.concurrent.Executors;
 
 import structInfo.Constants;
 import structInfo.Directions;
+import structInfo.LogInfo;
 import structInfo.UnitType;
+import structInfo.LogInfo.Action;
 import units.Dragon;
 import units.Player;
 import units.Unit;
 
 public class DragonMaster implements Runnable {
-	
+
 	private BattleField battlefield;
 	private Server serverOwner;
 	private int dragonCount;
-	private volatile boolean runDragons; //server that moves the dragons
-	private volatile boolean createDragons; //server creates dragons
-	
-	public DragonMaster(Server serverOwner, BattleField battlefield, int dragonCount, boolean runDragons,boolean createDragons) {
+	private volatile boolean runDragons; // server that moves the dragons
+	private volatile boolean createDragons; // server creates dragons
+
+	public DragonMaster(Server serverOwner, BattleField battlefield,
+			int dragonCount, boolean runDragons, boolean createDragons) {
 		this.setServerOwner(serverOwner);
-		this.battlefield=battlefield;
-		this.dragonCount=dragonCount;
+		this.battlefield = battlefield;
+		this.dragonCount = dragonCount;
 		this.setRunDragons(runDragons);
 		this.setCreateDragons(createDragons);
-		
+
 		if (this.createDragons) {
 			for (int i = 0; i < dragonCount; i++) {
 				int x, y, attempt = 0;
@@ -54,30 +57,30 @@ public class DragonMaster implements Runnable {
 				Dragon dragon = new Dragon(finalX, finalY, battlefield);
 			}
 		}
-		
+
 	}
 
 	@Override
 	public void run() {
-		
-		while(!runDragons){
-			//sleep if other server sends the moves of Dragons
+
+		while (!runDragons) {
+			// sleep if other server sends the moves of Dragons
 			try {
 				Thread.sleep(Constants.SERVER2SERVER_TIMEOUT);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
-		
-		//this server makes the moves
-		int turn=0;
+
+		// this server makes the moves
+		int turn = 0;
 		while (runDragons) {
-			//turn++;
-			if (turn == 5){
-				runDragons=false;
+			// turn++;
+			if (turn == 5) {
+				runDragons = false;
 				break;
 			}
-			
+
 			// Sleep while the dragon is considering its next move
 			try {
 				Thread.sleep(Constants.CLIENT_PERIOD_ACTION);
@@ -88,14 +91,14 @@ public class DragonMaster implements Runnable {
 			for (Unit unit : this.battlefield.getUnits()) {
 				if (unit instanceof Player)
 					continue;
-				ArrayList <Directions> adjacentPlayers = new ArrayList<Directions> ();
+				ArrayList<Directions> adjacentPlayers = new ArrayList<Directions>();
 
 				// Stop if the dragon runs out of hitpoints
-				if (unit.getHitPoints() <= 0){
+				if (unit.getHitPoints() <= 0) {
 					this.battlefield.removeUnit(unit.getX(), unit.getY());
 					continue;
 				}
-					
+
 				// Decide what players are near
 				if (unit.getY() > 0)
 					if (unit.getType(unit.getX(), unit.getY() - 1) == UnitType.player)
@@ -115,54 +118,68 @@ public class DragonMaster implements Runnable {
 					continue; // There are no players to attack
 				Directions playerToAttack = adjacentPlayers.get((int) (Math
 						.random() * adjacentPlayers.size()));
-				
-				Unit targetUnit= null;
+
+				Unit targetUnit = null;
 
 				// Attack the player
 				switch (playerToAttack) {
 				case up:
-					targetUnit= this.battlefield.getUnit(unit.getX(), unit.getY() - 1);
+					targetUnit = this.battlefield.getUnit(unit.getX(),
+							unit.getY() - 1);
 					this.battlefield.dealDamage(unit.getX(), unit.getY() - 1,
 							unit.getAttackPoints());
 					break;
 				case right:
-					targetUnit= this.battlefield.getUnit(unit.getX() + 1, unit.getY());
+					targetUnit = this.battlefield.getUnit(unit.getX() + 1,
+							unit.getY());
 					this.battlefield.dealDamage(unit.getX() + 1, unit.getY(),
 							unit.getAttackPoints());
 					break;
 				case down:
-					targetUnit= this.battlefield.getUnit(unit.getX(), unit.getY() + 1);
+					targetUnit = this.battlefield.getUnit(unit.getX(),
+							unit.getY() + 1);
 					this.battlefield.dealDamage(unit.getX(), unit.getY() + 1,
 							unit.getAttackPoints());
 					break;
 				case left:
-					targetUnit= this.battlefield.getUnit(unit.getX() - 1, unit.getY());
+					targetUnit = this.battlefield.getUnit(unit.getX() - 1,
+							unit.getY());
 					this.battlefield.dealDamage(unit.getX() - 1, unit.getY(),
 							unit.getAttackPoints());
 					break;
 				}
-				//send unsubscribe message when one Player is hit
-				if(targetUnit instanceof Player && targetUnit.getHitPoints() < targetUnit.getMaxHitPoints()){
-					Runnable messageSender = new UnSubscribeMessageSender(this.getServerOwner(),targetUnit);
-					new Thread(messageSender).start();
+				// new Move for the Dragon - going to ValidMonitor
+				LogInfo actionDragon = new LogInfo(
+						Action.Damage,
+						unit.getUnitID(),
+						unit.getX(),
+						unit.getY(),
+						UnitType.dragon,
+						targetUnit.getUnitID(),
+						targetUnit.getX(),
+						targetUnit.getY(),
+						targetUnit.getType(targetUnit.getX(), targetUnit.getY()),
+						System.currentTimeMillis(), Server.getMyInfo()
+								.getName());
+				// put action to Queue
+				try {
+					this.serverOwner.getValidBlockQueue().put(actionDragon);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
-			
-			}
-		}
-		
-		if(!this.runDragons){
-			ListIterator<Unit> it = this.battlefield.getUnits().listIterator();
-			while(it.hasNext()){
-				Unit unit= it.next();
-				if (unit instanceof Player) continue;
-				this.battlefield.removeUnit(unit.getX(), unit.getY(), it);
-			}
-		}
-		
-		//TODO:stopGame();
-			
 
+			}
+		}
+
+		/*
+		 * if(!this.runDragons){ ListIterator<Unit> it =
+		 * this.battlefield.getUnits().listIterator(); while(it.hasNext()){ Unit
+		 * unit= it.next(); if (unit instanceof Player) continue;
+		 * this.battlefield.removeUnit(unit.getX(), unit.getY(), it); }
+		 */
 	}
+
+	// TODO:stopGame();
 
 	public boolean isRunDragons() {
 		return runDragons;
@@ -187,6 +204,5 @@ public class DragonMaster implements Runnable {
 	public void setServerOwner(Server serverOwner) {
 		this.serverOwner = serverOwner;
 	}
-	
 
 }

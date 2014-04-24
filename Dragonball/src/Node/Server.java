@@ -234,7 +234,7 @@ public class Server extends Node implements java.io.Serializable{
 					
 					for(LogInfo temp: server.getValidActions())
 					{
-						System.out.println("Valid are: "+temp.getSenderIP());
+						System.out.println("Valid are: "+temp.getSenderName());
 					}
 				 }
 				
@@ -499,11 +499,7 @@ public class Server extends Node implements java.io.Serializable{
 		}
 	}
 	
-	public void recomputeBattleField(BattleField messageBattleField){
-		battlefield.copyListUnits(messageBattleField.getUnits());
-		battlefield.copyMap(messageBattleField.getMap());
 
-	}
 	
 	
 	/*----------------------------------------------------

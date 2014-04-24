@@ -140,6 +140,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 			for (ServerInfo serverInfo : Server.getServerList().values()) {
 				if (!serverInfo.isRunsGame())
 					continue;
+				System.out.println("Server "+ serverInfo.getName()+" has the BattleField");
 				
 				ServerServerMessage requestBattleFieldMessage = new ServerServerMessage(
 										MessageType.RequestBattlefield, 
@@ -165,7 +166,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 				
 				System.out.println("Server is going to sleep for Server2ServerTimeout");
 				try {
-					Thread.sleep(Constants.SERVER2SERVER_TIMEOUT);
+					Thread.sleep(2* Constants.SERVER2SERVER_TIMEOUT);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -174,7 +175,12 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 			}
 
 		}
-		System.out.println("Someone is alive");
+		
+		if(!Server.getMyInfo().isRunsGame()){
+			System.out.println("NO-ONE is alive");
+			return;
+		}
+		System.out.println("Someone was alive");
 		
 		//create new client as Player to Battlefield
 		int newUnitID= this.serverOwner.createPlayer();
@@ -275,11 +281,42 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 												senderUnit.getType(senderUnit.getX(),senderUnit.getY()),
 												targetUnitID, 
 												targetX, targetY, targetType,
-												message.getTimeIssuedFromServer(), message.getSenderIP());
+												message.getTimeIssuedFromServer(), message.getSender());
 		System.out.println("New Action : "+ newPendingAction.toString());
 		
-		//add action to pending move
-		this.serverOwner.getPendingActions().put(String.valueOf(targetX)+" "+String.valueOf(targetY), newPendingAction);	
+		//add action as pending move 
+		this.serverOwner.getPendingActions().put(String.valueOf(targetX)+" "+String.valueOf(targetY), newPendingAction);
+		
+		//broadcast to all servers running the game the new Pending Move
+		for(ServerInfo serverInfo: Server.getServerList().values()){
+			if(!serverInfo.isRunsGame())
+				continue;
+			
+			ServerServerMessage checkPendingMessage = new ServerServerMessage(
+											MessageType.CheckPending, 
+											Server.getMyInfo().getName(), Server.getMyInfo().getIP(),
+											serverInfo.getName(), serverInfo.getIP());
+			
+			checkPendingMessage.setActionToBeChecked(newPendingAction);
+
+			// send the subscription message to the server
+			ServerServer serverComm = null;
+			serverComm = Server.getServerReg(new Node(serverInfo.getName(),
+					serverInfo.getIP()));
+			
+			if(serverComm == null) continue;
+			
+			System.out.println("Server: "+ Server.getMyInfo().getName() + " sends CheckPending to "+ serverInfo.getName());
+
+			try {
+				serverComm.onMessageReceived(checkPendingMessage);
+			} catch (RemoteException e) {
+				e.printStackTrace();
+			} catch (NotBoundException e) {
+				e.printStackTrace();
+			}
+		}
+		
 	}
 	
 

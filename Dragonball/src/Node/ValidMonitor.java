@@ -1,10 +1,16 @@
 package Node;
 
 import java.util.ArrayList;
+import java.util.ListIterator;
 import java.util.concurrent.BlockingQueue;
+
+import messages.MessageType;
+import messages.ServerServerMessage;
 
 import structInfo.LogInfo;
 import structInfo.LogInfo.Action;
+import structInfo.ServerInfo;
+import units.Dragon;
 import units.Player;
 import units.Unit;
 
@@ -28,23 +34,42 @@ public class ValidMonitor implements Runnable{
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			//TODO,TODO : check for rollback here? after this, the action is valid and it WILL BE played (targetUnitID may also be -1)
+			//A Removed Action has received from other Server
+			if(newAction.getAction().equals(Action.Removed)){
+				ListIterator<Unit> it =Server.getBattlefield().getUnits().listIterator();
+		 		while(it.hasNext()){ 
+		 			Unit unit= it.next();
+		 			if(unit.getUnitID() == newAction.getSenderUnitID()){
+		 				Server.getBattlefield().removeUnit(unit.getX(), unit.getY(), it);
+		 				break;
+		 			}
+		 		}
+		 		//logs the new Valid Action "Removed"
+				this.validActions.add(newAction);	
+				continue;
+			}
+			
+			 //after this, the action is valid and it WILL BE played (targetUnitID may also be -1)
 			Unit existingTargetUnit=Server.getBattlefield().getUnit(newAction.getTargetX(), newAction.getTargetY());
 		    int existingTargetUnitID;
 		    if(existingTargetUnit==null)
 		    	existingTargetUnitID=-1;
 		    else
 		    	existingTargetUnitID=existingTargetUnit.getUnitID();
+		    
 		    if(Server.getBattlefield().getUnit(newAction.getSenderX(), newAction.getSenderY()).getUnitID()!=newAction.getSenderUnitID() ||
 		    		existingTargetUnitID!=newAction.getTargetUnitID()){
 					    	System.err.println("Valid Monitor found an inconsistency from the updated Battlefield");
-							continue; 	
+					    	continue;
+					    	//TODO,TODO : check for rollback here?
 		    }
+
 			Unit senderUnit= Server.getBattlefield().getUnitByUnitID(newAction.getSenderUnitID());
 			if(senderUnit==null){
 				System.err.println("ValidMonitor: Move from unit which is not in the BattleField");
 				continue;
 			}
+			
 			switch (newAction.getTargetType()) {
 			case undefined:
 				// There is no unit in the square. Move the player to this square
@@ -59,24 +84,24 @@ public class ValidMonitor implements Runnable{
 				Server.getBattlefield().dealDamage(newAction.getTargetX(), newAction.getTargetY(), senderUnit.getAttackPoints());
 				break;
 		}
-			//logs the new Valisd Action
+			//logs the new Valid Action
 			this.validActions.add(newAction);			
 			
-			//broadcast to servers
-			new Thread(new Runnable(){
-
-				@Override
-				public void run() {
-					//TODO: create message ServerServerMessage
-					//put battlefield in the message
-					//send to all servers
-				}
-				
-			}).start();
+			//server sends ONLY his valid actions
+			if(!newAction.getSenderName().equals(Server.getMyInfo().getName()))
+				continue;
 			
+			
+			/*----------------------------------------------------
+			Create thread for sending Valid Action
+			----------------------------------------------------		
+			 */
+			Runnable validActionSender = new ValidActionSender(newAction);
+			new Thread(validActionSender).start();
+						
 			
 			Unit targetUnit= Server.getBattlefield().getUnitByUnitID(newAction.getTargetUnitID());
-			if((targetUnit instanceof Player) && (targetUnit.getHitPoints()<=0)){
+			if(((targetUnit instanceof Player) || (targetUnit instanceof Dragon)) && (targetUnit.getHitPoints()<=0)){
 				System.err.println("Valid Monitor went to unsubscribed");
 				Runnable messageSender = new UnSubscribeMessageSender(this.getServerOwner(),targetUnit);
 				new Thread(messageSender).start();
@@ -87,6 +112,9 @@ public class ValidMonitor implements Runnable{
 													targetUnit.getType(targetUnit.getX(),targetUnit.getY()),
 													System.currentTimeMillis(), "0.0.0.0");
 				this.validActions.add(playerDown);
+				
+				Runnable validActionPlayerDownSender = new ValidActionSender(playerDown);
+				new Thread(validActionPlayerDownSender).start();
 			}
 			
 			

@@ -16,6 +16,7 @@ public class ClientServerMessage extends Message implements Serializable{
 	
 	public ClientServerMessage(){
 		super();
+		this.battlefield=BattleField.getBattleField();
 	}
 	
 	public ClientServerMessage(MessageType messageRequest, String sender,String senderIP,String receiver,String receiverIP){

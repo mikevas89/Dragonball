@@ -32,10 +32,25 @@ public class Node implements java.io.Serializable{
 	public void setIP(String iP) {
 		IP = iP;
 	}
-	
-    public boolean equals(Node info) {
-
-        return (this.Name.equals(info.Name) && this.IP.equals(info.IP));
+	@Override
+    public boolean equals(Object info) {
+		if(this==info)
+			return true;
+		if(info==null)
+			return false;
+		if(getClass()!=info.getClass())
+			return false;
+		
+		Node nodeInfo = (Node)info;
+		if(!this.Name.equals(nodeInfo.getName()) || !this.IP.equals(nodeInfo.IP))
+			return false;
+		return true;
     }
+	
+	@Override
+    public int hashCode(){
+		return this.Name.hashCode() + this.IP.hashCode();
+				 
+	}
 
 }
