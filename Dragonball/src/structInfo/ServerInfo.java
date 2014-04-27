@@ -9,6 +9,11 @@ package structInfo;
 		private boolean Alive; //server is able to operate
 		private int numClients; //number of clients for the server
 		private boolean runsGame; //server is running the game (only if clients are connected)
+		
+		private boolean problematicServer; //server finds out that this server does not respond
+		private int totalNumAnswersAggreement; //broadcast messages to agree about removing server
+		private int numAnswersAgreeRemovingServer;
+		private int numAnswersNotAgreeRemovingServer;
 	
 
 		public ServerInfo(String name, String ip, int serverid, boolean alive) {
@@ -18,7 +23,12 @@ package structInfo;
 			this.Alive=alive;
 			this.setNumClients(0);
 			this.setRunsGame(false);
+			this.setCurrentNodeTimeLastPingSent(0);
 			this.setRemoteNodeTimeLastPingSent(0);
+			this.setProblematicServer(false);
+			this.setTotalNumAnswersAggreement(0);
+			this.setNumAnswersAgreeRemovingServer(0);
+			this.setNumAnswersNotAgreeRemovingServer(0);
 		}
 		
 		public String getName() {
@@ -65,6 +75,39 @@ package structInfo;
 		public void setCurrentNodeTimeLastPingSent(
 				long currentNodeTimeLastPingSent) {
 			this.currentNodeTimeLastPingSent = currentNodeTimeLastPingSent;
+		}
+
+		public int getTotalNumAnswersAggreement() {
+			return totalNumAnswersAggreement;
+		}
+
+		public void setTotalNumAnswersAggreement(int totalNumAnswersAggreement) {
+			this.totalNumAnswersAggreement = totalNumAnswersAggreement;
+		}
+
+		public boolean isProblematicServer() {
+			return problematicServer;
+		}
+
+		public void setProblematicServer(boolean problematicServer) {
+			this.problematicServer = problematicServer;
+		}
+
+		public int getNumAnswersAgreeRemovingServer() {
+			return numAnswersAgreeRemovingServer;
+		}
+
+		public void setNumAnswersAgreeRemovingServer(int numAnswersAgreeRemovingServer) {
+			this.numAnswersAgreeRemovingServer = numAnswersAgreeRemovingServer;
+		}
+
+		public int getNumAnswersNotAgreeRemovingServer() {
+			return numAnswersNotAgreeRemovingServer;
+		}
+
+		public void setNumAnswersNotAgreeRemovingServer(
+				int numAnswersNotAgreeRemovingServer) {
+			this.numAnswersNotAgreeRemovingServer = numAnswersNotAgreeRemovingServer;
 		}
 	}
 	

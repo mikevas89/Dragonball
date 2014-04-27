@@ -9,6 +9,7 @@ import structInfo.ClientPlayerInfo;
 import structInfo.Constants;
 import structInfo.LogInfo;
 import structInfo.LogInfo.Action;
+import structInfo.ServerInfo;
 import units.Unit;
 
 //checks the Timeouts of Ping Messages between Server-Client and Server-Server
@@ -30,6 +31,26 @@ public class PingMonitor implements Runnable{
 			}
 			
 			//TODO: checks the Server2Server Connections according to the update of Ping messages
+			for(Iterator<Entry<Node, ServerInfo>> it= Server.getServerList().entrySet().iterator();it.hasNext();){
+				Entry<Node, ServerInfo> entry = it.next();
+				
+				//regular communication
+				if(System.currentTimeMillis() - entry.getValue().getRemoteNodeTimeLastPingSent() < 2* Constants.SERVER2SERVER_PING_PERIOD)
+					continue;
+				//broadcast "ProblematicServer" message to all servers except the problematic one 
+				if(System.currentTimeMillis() - entry.getValue().getRemoteNodeTimeLastPingSent() < Constants.SERVER2SERVER_TIMEOUT && 
+																!entry.getValue().isProblematicServer()){
+					Runnable pingMonitorSender=new PingMonitorSender(entry.getKey(),MessageType.ProblematicServer,
+																	PingMonitorSender.DecisionType.Undefined);
+					new Thread(pingMonitorSender).start();
+					entry.getValue().setProblematicServer(true);
+					it.remove();
+					Server.getServerList().put(entry.getKey(), entry.getValue());
+				}
+				
+			}
+			
+			
 			
 			//checks the Client2Server Connections according to the update of Ping messages from the Client
 			
@@ -42,7 +63,8 @@ public class PingMonitor implements Runnable{
 				if(System.currentTimeMillis() - entry.getValue().getTimeLastPingSent() < 2* Constants.CLIENT2SERVER_PING_PERIOD &&
 						!entry.getValue().isServerHasSentPingForCheckingClient()){
 					
-					Runnable pingMonitorSender=new PingMonitorSender(entry.getKey(),MessageType.ServerClientPing);
+					Runnable pingMonitorSender=new PingMonitorSender(entry.getKey(),MessageType.ServerClientPing,
+																	PingMonitorSender.DecisionType.Undefined);
 					new Thread(pingMonitorSender).start();
 					
 					entry.getValue().setServerHasSentPingForCheckingClient(true);

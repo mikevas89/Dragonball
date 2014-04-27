@@ -2,6 +2,7 @@ package communication;
 
 import interfaces.ServerServer;
 
+
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -13,6 +14,7 @@ import java.util.Map.Entry;
 
 import structInfo.LogInfo;
 import structInfo.LogInfo.Action;
+import structInfo.Constants;
 import structInfo.ServerInfo;
 import structInfo.UnitType;
 
@@ -20,6 +22,7 @@ import messages.Message;
 import messages.MessageType;
 import messages.ServerServerMessage;
 import Node.Node;
+import Node.PingMonitorSender;
 import Node.Server;
 
 public class Server2ServerRMI extends UnicastRemoteObject implements ServerServer { // implements
@@ -59,8 +62,14 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		case PendingMoveInvalid:
 			onPendingMoveInvalidMessageReceived(serverServerMessage);
 			break;
-		case SendValidAction:
+		case SendValidAction://TODO
 			onSendValidActionMessageReceived(serverServerMessage);
+			break;
+		case ProblematicServer:
+			onProblematicServerMessageReceived(serverServerMessage);	
+			break;
+		case ResponseProblematicServer:
+			onResponseProblematicServerMessageReceived(serverServerMessage);
 			break;
 		case Subscribe2Server:
 			onServerSubscribe2ServerMessageReceived(serverServerMessage);
@@ -79,9 +88,11 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 
 	
 
+
+
 	private void onPendingMoveInvalidMessageReceived(ServerServerMessage message) {
 		System.out.println("onPendingMoveInvalidMessageReceived");
-		Map<String, LogInfo> pendingLog = this.serverOwner.getPendingActions();
+		Map<String, LogInfo> pendingLog = Server.getPendingActions();
 		//iterate and remove the pending invalid move
 		for(Iterator<Entry<String, LogInfo>> it= pendingLog.entrySet().iterator();it.hasNext();){
 			Map.Entry<String, LogInfo> entry = it.next();
@@ -189,16 +200,56 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		
 	}
 
-	private void onSendValidActionMessageReceived(
-			ServerServerMessage serverServerMessage) {
+	private void onSendValidActionMessageReceived(ServerServerMessage message) {
+		//TODO
+		//TODO
 	}
 
+
+	private void onProblematicServerMessageReceived(ServerServerMessage message) {
+		Node problematicServer = message.getProblematicServerToCheck();
+		
+		ServerInfo serverInfo = Server.getServerList().get(problematicServer);
+		if(serverInfo.isProblematicServer())
+			return;
+		
+		serverInfo.setProblematicServer(true);
+		serverInfo.setNumAnswersAgreeRemovingServer(serverInfo.getNumAnswersAgreeRemovingServer()+1);//first vote from the sender
+		
+		Runnable pingMonitorSender=null;
+		//current server decides about problematicServer 
+		if(System.currentTimeMillis() - serverInfo.getRemoteNodeTimeLastPingSent() > Constants.SERVER2SERVER_PING_PERIOD){
+			serverInfo.setNumAnswersAgreeRemovingServer(serverInfo.getNumAnswersAgreeRemovingServer()+1);
+			pingMonitorSender=new PingMonitorSender(problematicServer,MessageType.ResponseProblematicServer,
+					PingMonitorSender.DecisionType.Agree);
+		}
+		else{
+			serverInfo.setNumAnswersNotAgreeRemovingServer(serverInfo.getNumAnswersNotAgreeRemovingServer()+1);
+			pingMonitorSender=new PingMonitorSender(problematicServer,MessageType.ResponseProblematicServer,
+					PingMonitorSender.DecisionType.Disagree);
+		}		
+		serverInfo.setTotalNumAnswersAggreement(serverInfo.getNumAnswersAgreeRemovingServer() 
+													+ serverInfo.getNumAnswersNotAgreeRemovingServer());
+		//update problematic server info
+		Server.getServerList().replace(problematicServer, serverInfo);
+		//broadcast node's decision
+		new Thread(pingMonitorSender).start();
+
+	}
+	
+
+	private void onResponseProblematicServerMessageReceived(ServerServerMessage message) {
+		
+		
+	}
+	
+	
 	private void onCheckPendingMessageReceived(ServerServerMessage message) {
 		
 		boolean hasToReplyPendingInvalid=false;
 		
 		LogInfo messagePendingMove = message.getActionToBeChecked();
-		Map<String, LogInfo> pendingLog = this.serverOwner.getPendingActions();
+		Map<String, LogInfo> pendingLog = Server.getPendingActions();
 		
 		for(Iterator<Entry<String, LogInfo>> it= pendingLog.entrySet().iterator();it.hasNext();){
 			Map.Entry<String, LogInfo> entry = it.next();
@@ -267,8 +318,6 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		result.setRemoteNodeTimeLastPingSent(System.currentTimeMillis());
 		Server.getServerList().remove(server);
 		Server.getServerList().put(server, result);
-		
-
 	}
 
 	public Server getServerOwner() {

@@ -10,10 +10,6 @@ import java.util.Map;
 import structInfo.UnitType;
 
 
-
-
-
-
 /**
  * Base class for all players whom can 
  * participate in the DAS game. All properties

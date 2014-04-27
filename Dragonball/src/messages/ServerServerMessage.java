@@ -2,10 +2,12 @@ package messages;
 
 import game.BattleField;
 
+
 import java.io.Serializable;
 
+import Node.Node;
+
 import structInfo.LogInfo;
-import units.Unit;
 
 public class ServerServerMessage extends Message implements Serializable{
 	
@@ -17,6 +19,7 @@ public class ServerServerMessage extends Message implements Serializable{
 	private LogInfo actionToBeChecked;
 	private int numClients;
 	private boolean senderRunsGame;
+	private Node problematicServerToCheck;
 	
 	
 	public ServerServerMessage(){
@@ -64,6 +67,14 @@ public class ServerServerMessage extends Message implements Serializable{
 
 	public void setSenderRunsGame(boolean senderRunsGame) {
 		this.senderRunsGame = senderRunsGame;
+	}
+
+	public Node getProblematicServerToCheck() {
+		return problematicServerToCheck;
+	}
+
+	public void setProblematicServerToCheck(Node problematicServerToCheck) {
+		this.problematicServerToCheck = problematicServerToCheck;
 	}
 
 

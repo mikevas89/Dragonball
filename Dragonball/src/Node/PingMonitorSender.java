@@ -1,34 +1,47 @@
 package Node;
 
 import interfaces.ClientServer;
+import interfaces.ServerServer;
 
-import java.net.MalformedURLException;
-import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.Enumeration;
 import java.util.Iterator;
 
-import structInfo.ClientPlayerInfo;
+import structInfo.ServerInfo;
+
+
+
 import messages.ClientServerMessage;
 import messages.MessageType;
+import messages.ServerServerMessage;
 
 public class PingMonitorSender implements Runnable{
+	
+	public enum DecisionType {
+		Agree,
+		Disagree,
+		Undefined
+	}
 
 	private Node referencedNode; //client if MessageType ==ServerClientPing
-								//server to CheckIfAlive if MessageType ==CheckIfAlive
+								//server to ProblematicServer if MessageType ==CheckIfAlive
 	private MessageType messageTypeToSend;
 	
+	private DecisionType nodeDesicion;
 	
-	public PingMonitorSender(Node referencedNode, MessageType messageType){
+	
+	public PingMonitorSender(Node referencedNode, MessageType messageType,DecisionType decisionType){
 		this.setReferencedNode(referencedNode);
-		this.setMessageTypeToSend(messageType);		
+		this.setMessageTypeToSend(messageType);	
+		this.setNodeDesicion(decisionType);
 	}
 
 	
 	@Override
 	public void run() {
-		if(this.getMessageTypeToSend().equals(MessageType.ServerClientPing)){
+		switch(this.getMessageTypeToSend()){
+		case ServerClientPing:
 			for(Enumeration<Node> it=Server.getClientList().keys();it.hasMoreElements();){
 				Node clientToSend = it.nextElement();
 				if(!clientToSend.equals(this.getReferencedNode()))
@@ -60,9 +73,80 @@ public class PingMonitorSender implements Runnable{
 				}
 				
 			}	
-		}
-		else if(this.getMessageTypeToSend().equals(MessageType.CheckIfAlive)){
-			//TODO: server broadcasts to remaining servers the checkiIfAlive Message
+		break;
+		case ProblematicServer:
+			for(Iterator<ServerInfo> it = Server.getServerList().values().iterator();it.hasNext();){
+				ServerInfo entry = it.next();
+				Node server = new Node(entry.getName(), entry.getIP());
+				if(server.equals(this.referencedNode))
+					continue;
+				
+				if(entry.isProblematicServer() || !entry.isAlive())
+					continue;
+				
+				//With this message, Server sends the ProblematicServer that the other Server should agree to remove
+				 ServerServerMessage sendProblematicServer = new ServerServerMessage(
+														MessageType.ProblematicServer,
+														Server.getMyInfo().getName(),
+														Server.getMyInfo().getIP(),
+														server.getName(),
+														server.getIP());
+				 //put problematic server info to message
+				 sendProblematicServer.setProblematicServerToCheck(this.getReferencedNode());
+				 
+				 //sending the ProblematicServer message to subscribed client
+				 ServerServer serverRMI=null;
+				 serverRMI = Server.getServerReg(server);
+				 
+				 if(serverRMI == null) return;
+				
+				 try {
+					 serverRMI.onMessageReceived(sendProblematicServer);
+				 } catch (RemoteException | NotBoundException e) {
+					e.printStackTrace();
+				 }
+				
+				 System.out.println("Server: ProblematicServer sent to Server"+ server.getName()+ "serverIP: "+ server.getIP());
+			}
+			break;
+		case ResponseProblematicServer:
+			for(Iterator<ServerInfo> it = Server.getServerList().values().iterator();it.hasNext();){
+				ServerInfo entry = it.next();
+				Node server = new Node(entry.getName(), entry.getIP());
+				if(server.equals(this.referencedNode))
+					continue;
+				if(entry.isProblematicServer() || !entry.isAlive())
+					continue;
+				
+				//With this message, Server sends the ProblematicServer that the other Server should agree to remove
+				 ServerServerMessage sendProblematicServer = new ServerServerMessage(
+														MessageType.ResponseProblematicServer,
+														Server.getMyInfo().getName(),
+														Server.getMyInfo().getIP(),
+														server.getName(),
+														server.getIP());
+				 //put problematic server decision info to message
+				 sendProblematicServer.setProblematicServerToCheck(this.getReferencedNode());
+				 sendProblematicServer.getContent().put("Decision", this.getNodeDesicion());
+				 
+				 //sending the ProblematicServer message to subscribed client
+				 ServerServer serverRMI=null;
+				 serverRMI = Server.getServerReg(server);
+				 
+				 if(serverRMI == null) return;
+				
+				 try {
+					 serverRMI.onMessageReceived(sendProblematicServer);
+				 } catch (RemoteException | NotBoundException e) {
+					e.printStackTrace();
+				 }
+				
+				 System.out.println("Server: ResponseProblematicServer sent to Server"+ server.getName()+ "serverIP: "+ server.getIP());
+			}
+			break;
+		default:
+			break;
+		
 		}
 		
 	}
@@ -94,6 +178,16 @@ public class PingMonitorSender implements Runnable{
 
 	public void setMessageTypeToSend(MessageType messageTypeToSend) {
 		this.messageTypeToSend = messageTypeToSend;
+	}
+
+
+	public String getNodeDesicion() {
+		return nodeDesicion.toString();
+	}
+
+
+	public void setNodeDesicion(DecisionType nodeDesicion) {
+		this.nodeDesicion = nodeDesicion;
 	}
 
 

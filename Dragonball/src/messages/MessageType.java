@@ -15,7 +15,8 @@ public enum MessageType {
 	//Subscribe2Server,
 	CheckPending,
 	PendingMoveInvalid,
-	CheckIfAlive,
+	ProblematicServer,
+	ResponseProblematicServer,
 	
 	SendValidAction,
 	//GetBattlefield
