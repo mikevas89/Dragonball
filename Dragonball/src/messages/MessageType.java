@@ -2,7 +2,7 @@ package messages;
 
 public enum MessageType {
 	ClientServerPing,
-	//ServerClientPing, not so useful
+	ServerClientPing, 
 	Subscribe2Server,
 	UnSubscribeFromServer,
 	Action,
@@ -15,6 +15,7 @@ public enum MessageType {
 	//Subscribe2Server,
 	CheckPending,
 	PendingMoveInvalid,
+	CheckIfAlive,
 	
 	SendValidAction,
 	//GetBattlefield

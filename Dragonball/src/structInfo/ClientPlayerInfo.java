@@ -6,9 +6,18 @@ import Node.Node;
 
 public class ClientPlayerInfo extends Node{
 
+	private static final long serialVersionUID = 1L;
+
 	private int unitID; //unit ID of the client
 
 	private long TimeLastPingSent; //time that the client sent his last ClientServerPing	
+	
+	private long lastPingFromServer; //last timestamp of Ping from Server
+	
+	private boolean serverHasSentPingForCheckingClient;
+	private boolean regularCommunicationFromClient;
+	
+	
 	
 	
 	public ClientPlayerInfo(String Name, String IP,int unitID){
@@ -42,6 +51,31 @@ public class ClientPlayerInfo extends Node{
 
 	public void setTimeLastPingSent(long timeLastPingSent) {
 		TimeLastPingSent = timeLastPingSent;
+	}
+
+	public long getLastPingFromServer() {
+		return lastPingFromServer;
+	}
+
+	public void setLastPingFromServer(long lastPingFromServer) {
+		this.lastPingFromServer = lastPingFromServer;
+	}
+
+	public boolean isServerHasSentPingForCheckingClient() {
+		return serverHasSentPingForCheckingClient;
+	}
+
+	public void setServerHasSentPingForCheckingClient(
+			boolean serverHasSentPingForCheckingClient) {
+		this.serverHasSentPingForCheckingClient = serverHasSentPingForCheckingClient;
+	}
+
+	public boolean isRegularCommunicationFromClient() {
+		return regularCommunicationFromClient;
+	}
+
+	public void setRegularCommunicationFromClient(boolean regularCommunicationFromClient) {
+		this.regularCommunicationFromClient = regularCommunicationFromClient;
 	}
 }
 

@@ -16,6 +16,7 @@ import messages.MessageType;
 
 import structInfo.ClientPlayerInfo;
 import structInfo.LogInfo;
+import structInfo.LogInfo.Action;
 import units.Dragon;
 import units.Player;
 import units.Unit;
@@ -23,10 +24,10 @@ import units.Unit;
 public class UnSubscribeMessageSender implements Runnable{
 	
 	private Unit unit;
-	private Server serverSender;
+	private Map<String,LogInfo> pendingActions;//it is needed to delete pending actions of the Unsubscribed
 	
-	public UnSubscribeMessageSender(Server server,Unit unit) {
-		this.setServerSender(server);
+	public UnSubscribeMessageSender(Map<String,LogInfo> pendingActions,Unit unit) {
+		this.setPendingActions(pendingActions);
 		this.setUnit(unit);
 	}
 
@@ -34,7 +35,7 @@ public class UnSubscribeMessageSender implements Runnable{
 	public void run() {
 		Node client=null;
 		//remove pending Actions concerning this unit
-		for(Iterator<Entry<String, LogInfo>> it= this.getServerSender().getPendingActions().entrySet().iterator();it.hasNext();){
+		for(Iterator<Entry<String, LogInfo>> it= this.getPendingActions().entrySet().iterator();it.hasNext();){
 			Map.Entry<String, LogInfo> entry = it.next();
 			if(entry.getValue().getSenderUnitID()==unit.getUnitID() ||
 					entry.getValue().getTargetUnitID()==unit.getUnitID()){
@@ -42,7 +43,17 @@ public class UnSubscribeMessageSender implements Runnable{
 				it.remove();
 			}
 		}
-		//unsubscribe Dragon if he is dead
+		//remove Pending to Valid Actions from Queue
+		for(Iterator<LogInfo> it= Server.getValidActions().iterator();it.hasNext();){
+			LogInfo entry = it.next();
+			if((entry.getSenderUnitID()==unit.getUnitID() ||
+					entry.getTargetUnitID()==unit.getUnitID()) && !entry.getAction().equals(Action.Removed)){
+				System.err.println("UnSubscribe: Remove ToValid Actions(Good thing):"+ entry.toString());
+				it.remove();
+			}
+		}
+		
+		//Unsubscribe Dragon if he is dead
 		if(this.getUnit() instanceof Dragon){
 			 ListIterator<Unit> it =Server.getBattlefield().getUnits().listIterator();
 			 		while(it.hasNext()){ 
@@ -81,8 +92,8 @@ public class UnSubscribeMessageSender implements Runnable{
 		
 		ClientServerMessage sendUnSubscribed = new ClientServerMessage(
 				MessageType.UnSubscribeFromServer,
-				this.getServerSender().getName(),
-				this.getServerSender().getIP(),
+				Server.getMyInfo().getName(),
+				Server.getMyInfo().getIP(),
 				client.getName(),
 				client.getIP());
 		sendUnSubscribed.setBattlefield(Server.getBattlefield());
@@ -98,13 +109,12 @@ public class UnSubscribeMessageSender implements Runnable{
 		
 	}
 
-	public Server getServerSender() {
-		return serverSender;
-	}
-
-	public void setServerSender(Server serverSender) {
-		this.serverSender = serverSender;
-	}
+	
+	
+	/*----------------------------------------------------
+		GETTERS AND SETTERS
+	----------------------------------------------------		
+	 */
 
 	public Unit getUnit() {
 		return unit;
@@ -112,6 +122,14 @@ public class UnSubscribeMessageSender implements Runnable{
 
 	public void setUnit(Unit unit) {
 		this.unit = unit;
+	}
+
+	public Map<String, LogInfo> getPendingActions() {
+		return pendingActions;
+	}
+
+	public void setPendingActions(Map<String, LogInfo> pendingActions) {
+		this.pendingActions = pendingActions;
 	}
 	
 	

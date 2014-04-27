@@ -65,11 +65,9 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		case Subscribe2Server:
 			onServerSubscribe2ServerMessageReceived(serverServerMessage);
 			break;
-		case ServerSubscribedAck://same method with Subscribe2Server but not Ack back 
-			onServerSubscribe2ServerMessageReceived(serverServerMessage);
-			break;
 		case RequestBattlefield:
 			onRequestBattlefieldMessageReceived(serverServerMessage);
+			break;
 		case GetBattlefield:
 			onGetBattlefieldMessageReceived(serverServerMessage);
 			break;
@@ -100,18 +98,10 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 	private void onRequestBattlefieldMessageReceived(ServerServerMessage message) {
 		System.out.println("onRequestBattlefieldMessageReceived");
 		Node serverSender=new Node(message.getSender(),message.getSender());
-		//ServerInfo serverInfo= Server.getServerList().get((serverSender));
-		ServerInfo serverInfo = null;
-		for(ServerInfo resultInfo : Server.getServerList().values()){
-//		ServerInfo serverInfo = Server.getServerList().get(serverSender);
-			//System.out.println("ServerInfo Entry :"+ serverInfo.getName()+" "+serverInfo.getIP());
-			if(resultInfo.getName().equals(serverSender.getName()) && resultInfo.getIP().equals(serverSender.getIP()))
-				serverInfo = resultInfo;
-			if(resultInfo==null)
-				System.err.println("resultInfo is NULL");
-		}
+		ServerInfo serverInfo= Server.getServerList().get((serverSender));
+
 		if(serverInfo==null){
-			System.err.println("Unknown Server: "+ message.getSender() +" tries to request the Battlefield");
+			System.err.println("Unknown Server: "+ message.getSender() +" requests the Battlefield");
 			return;
 		}
 		ServerServerMessage sendBattleFieldMessage = new ServerServerMessage(
@@ -121,8 +111,6 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 					serverSender.getName(),
 					serverSender.getIP());
 		sendBattleFieldMessage.setBattlefield(Server.getBattlefield());
-		if(sendBattleFieldMessage.getBattlefield()==null)
-			System.err.println("Battlefield on the Message is null");
 		
 		//send the BattleField to the server
 		ServerServer serverComm= Server.getServerReg(new Node(serverInfo.getName(),serverInfo.getIP()));
@@ -148,23 +136,17 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 
 	private void onServerSubscribe2ServerMessageReceived(ServerServerMessage message) throws RemoteException {
 		
-		System.out.println("Server: onSubscribe2ServerMessageReceived from "+ message.getSender()+ " "+ message.getSender());
-		Node serverSender=new Node(message.getSender(),message.getSender());
-	//	ServerInfo serverInfo = null;
-	//	for(ServerInfo resultInfo : Server.getServerList().values()){
-			ServerInfo serverInfo = Server.getServerList().get(serverSender);
-			//System.out.println("ServerInfo Entry :"+ serverInfo.getName()+" "+serverInfo.getIP());
-	//		if(resultInfo.getName().equals(serverSender.getName()) && resultInfo.getIP().equals(serverSender.getIP()))
-	//			serverInfo = resultInfo;
-	//		if(resultInfo==null)
-	//			System.err.println("resultInfo is NULL");
-	//	}
-		//Server.printlist();
-		//ServerInfo serverInfo = Server.getServerList().get(serverSender);
-		if(serverInfo==null)
-			System.err.println("serverInfo is NULL");
+		System.out.println("Server: onSubscribe2ServerMessageReceived from "+ message.getSender()+ " "+ message.getSenderIP());
+		Node serverSender=new Node(message.getSender(),message.getSenderIP());
+
+		ServerInfo serverInfo = Server.getServerList().get(serverSender);
+
+		if(serverInfo==null) {
+			System.err.println("Server that requests Subscription is not listed on Server List");
+			return;
+		}
 		//new timestamp
-		serverInfo.setTimeLastPingSent(message.getTimeIssuedFromServer());
+		serverInfo.setRemoteNodeTimeLastPingSent(message.getTimeIssuedFromServer());
 		serverInfo.setAlive(true);
 		serverInfo.setRunsGame(message.isSenderRunsGame());
 		serverInfo.setNumClients(message.getNumClients());
@@ -220,14 +202,18 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		
 		for(Iterator<Entry<String, LogInfo>> it= pendingLog.entrySet().iterator();it.hasNext();){
 			Map.Entry<String, LogInfo> entry = it.next();
+			
 			//check contradictions according to game rules
 			if((entry.getValue().getTargetUnitID()==messagePendingMove.getSenderUnitID() 
 										&& messagePendingMove.getAction().equals(Action.Move)) ||
 				(messagePendingMove.getTargetUnitID()==entry.getValue().getSenderUnitID() 
 										&& entry.getValue().getAction().equals(Action.Move))){
 				
-				if(messagePendingMove.getTimestamp()<= entry.getValue().getTimestamp())
+				if(messagePendingMove.getTimestamp()<= entry.getValue().getTimestamp()){
+					System.err.println("Action "+ entry.getValue().toString() 
+										+ " is Removed due to the action\n : "+ messagePendingMove.toString());
 					it.remove();
+				}
 				else
 					hasToReplyPendingInvalid=true;
 			}
@@ -236,8 +222,11 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 					entry.getValue().getTargetY() == messagePendingMove.getTargetY() &&
 					messagePendingMove.getTargetType().equals(UnitType.undefined)){
 				
-				if(messagePendingMove.getTimestamp()<= entry.getValue().getTimestamp())
-					it.remove();
+					if(messagePendingMove.getTimestamp()<= entry.getValue().getTimestamp()){
+						System.err.println("Action "+ entry.getValue().toString() 
+											+ " is Removed due to the action\n : "+ messagePendingMove.toString());
+						it.remove();
+					}
 				else
 					hasToReplyPendingInvalid=true;	
 			}	
@@ -245,7 +234,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		
 		if(!hasToReplyPendingInvalid) return;
 		
-		//With this message, Server sends the OK subscription to the Server
+		//With this message, Server sends the Invalid Pending MOve that the other Server should remove
 		 ServerServerMessage sendPendingMoveInvalid = new ServerServerMessage(
 												MessageType.PendingMoveInvalid,
 												this.serverOwner.getName(),
@@ -275,7 +264,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		ServerInfo result = Server.getServerList().get(server);
 		if (result == null)
 			return; // client is not player in my database
-		result.setTimeLastPingSent(System.currentTimeMillis());
+		result.setRemoteNodeTimeLastPingSent(System.currentTimeMillis());
 		Server.getServerList().remove(server);
 		Server.getServerList().put(server, result);
 		

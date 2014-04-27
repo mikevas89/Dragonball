@@ -54,7 +54,7 @@ public class DragonMaster implements Runnable {
 
 				final int finalX = x;
 				final int finalY = y;
-				Dragon dragon = new Dragon(finalX, finalY, battlefield);
+				Dragon dragon = new Dragon(finalX, finalY, battlefield,Server.getMyInfo().getServerID());
 			}
 		}
 

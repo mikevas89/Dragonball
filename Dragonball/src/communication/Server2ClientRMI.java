@@ -78,18 +78,8 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		}
 	}
 	
-	
-	//TODO : MOVE SENDING FUNCTIONS TO SERVER
-	
-	public ClientServer getClientReg(Node client) throws MalformedURLException, RemoteException, NotBoundException
-	{
-		ClientServer clientCommunication = (ClientServer) 
-		Naming.lookup("rmi://"+client.getIP()+":"+String.valueOf(Constants.SERVER_CLIENT_RMI_PORT)
-				+"/"+client.getName());		//getClientInfo returns from ClientList
-																//clientIp and clientName
-		System.out.println("Getting Registry from "+ client.getName());
-		return clientCommunication;
-	}
+
+
 	
 	/*---------------------------------------------------
 	 * SERVER TO CLIENT METHODS 
@@ -114,8 +104,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		ClientPlayerInfo result = Server.getClientList().get(client);
 		if(result==null) return; //client is not player in my database
 		result.setTimeLastPingSent(System.currentTimeMillis());
-		Server.getClientList().remove(client);
-		Server.getClientList().put(client, result);
+		Server.getClientList().replace(client, result);
 	}
 	
 	public void onSubscribe2ServerMessageReceived(Message message){
@@ -209,11 +198,10 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		 sendSubscribed.setContent("unitID", String.valueOf(newClient.getUnitID()));
 		 //sending the ACK message to subscribed client
 		 ClientServer clientRMI=null;
-		try {
-			clientRMI = this.getClientReg(client);
-		} catch (MalformedURLException | RemoteException | NotBoundException e) {
-			e.printStackTrace();
-		}
+		 clientRMI = Server.getClientReg(client);
+		 
+		 if(clientRMI==null) 
+			 return;
 		
 		try {
 			clientRMI.onMessageReceived(sendSubscribed);
@@ -336,7 +324,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 					client.getIP());
 		sendBattleFieldMessage.setBattlefield(Server.getBattlefield());
 		//send the BattleField to the client
-		ClientServer clientComm= this.getClientReg(new Node(player.getName(),player.getIP()));
+		ClientServer clientComm= Server.getClientReg(new Node(player.getName(),player.getIP()));
 		clientComm.onMessageReceived(sendBattleFieldMessage);	
 	}
 	

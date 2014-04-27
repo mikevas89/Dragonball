@@ -1,8 +1,10 @@
 package Node;
 
 import game.BattleField;
+
 import game.BattleFieldViewer;
 
+import interfaces.ClientServer;
 import interfaces.ServerServer;
 
 import java.io.BufferedReader;
@@ -26,6 +28,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -48,19 +51,19 @@ public class Server extends Node implements java.io.Serializable{
 	
 	private static final long serialVersionUID = 1L;
 
-	private static HashMap<Node, ServerInfo> serverList;
-	
+	private static ConcurrentHashMap<Node, ServerInfo> serverList;
+	//private static Map<Node,ClientPlayerInfo> clientList;
 
-	private static HashMap<Node,ClientPlayerInfo> clientList;
+	private static ConcurrentHashMap<Node,ClientPlayerInfo> clientList;
 	
 	public static final int MIN_PLAYER_COUNT = 30;
 	public static final int MAX_PLAYER_COUNT = 60;
-	public static final int DRAGON_COUNT = 20;
+	public static final int DRAGON_COUNT = 50;
 	public static final int TIME_BETWEEN_PLAYER_LOGIN = 5000; // In milliseconds
 	
 	private static BattleField battlefield; 
-	private Map<String, LogInfo> PendingActions; //pending moves
-	private ArrayList<LogInfo> ValidActions; //log of the valid actions
+	private static Map<String, LogInfo> PendingActions; //pending moves
+	private static ArrayList<LogInfo> ValidActions; //log of the valid actions
 	private final BlockingQueue<LogInfo> validBlockQueue;//intermediate between valid and pending
 	
 	public volatile static boolean killServer = false;
@@ -76,12 +79,11 @@ public class Server extends Node implements java.io.Serializable{
 
 	public Server() throws IOException{
 		super();
-		serverList = new HashMap<Node, ServerInfo>();
-		clientList= new HashMap<Node,ClientPlayerInfo>(); //list of clients connected to that server
+		serverList = new ConcurrentHashMap<Node, ServerInfo>();
+		clientList= new ConcurrentHashMap<Node, ClientPlayerInfo>(); //list of clients connected to that server
 		PendingActions= Collections.synchronizedMap(new HashMap<String, LogInfo>());   // list of pending action
 		ValidActions= new ArrayList<LogInfo>();   // list of valid actions
 		validBlockQueue = new LinkedBlockingQueue<>();
-		
 		int numServer= this.getUniqueIdForName("ServerID.txt");
 		
 		//unique name of Client
@@ -188,14 +190,14 @@ public class Server extends Node implements java.io.Serializable{
 						Create thread for monitoring the pending action list
 				----------------------------------------------------		
 				*/
-				Runnable pendingMonitor = new PendingMonitor(server.getPendingActions(),server.getValidBlockQueue());
+				Runnable pendingMonitor = new PendingMonitor(Server.getPendingActions(),server.getValidBlockQueue());
 				new Thread(pendingMonitor).start();
 				
 				/*----------------------------------------------------
 						Create thread for validating the pending action list
 				----------------------------------------------------		
 				*/
-				Runnable validMonitor = new ValidMonitor(server,server.getValidActions(),server.getValidBlockQueue());
+				Runnable validMonitor = new ValidMonitor(Server.getPendingActions(),Server.getValidActions(),server.getValidBlockQueue());
 				new Thread(validMonitor).start();
 				
 				/*----------------------------------------------------
@@ -205,13 +207,19 @@ public class Server extends Node implements java.io.Serializable{
 				Runnable battlefieldSender = new BattlefieldSender(server);
 				new Thread(battlefieldSender).start();
 				
+				/*----------------------------------------------------
+		  			Thread to monitor Ping Messages for Server/Server and Server/Client Alive Connections
+				----------------------------------------------------		
+				 */
+				Runnable pingMonitor = new PingMonitor();
+				new Thread(pingMonitor).start();
+				
 				
 				
 				/*----------------------------------------------------
 						Main loop of server
 				----------------------------------------------------		
 				*/
-				int i=0;
 				while(!Server.killServer)
 				{
 					System.out.println("Server is running...");
@@ -221,21 +229,7 @@ public class Server extends Node implements java.io.Serializable{
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					//Long time = System.currentTimeMillis();
-					//System.out.println(time);
-					if(i==0)
-					{
-					//	server.setPendingActions("1 2", new LogInfo("192.","move","0","0", time));
-					//	server.setPendingActions("1 3", new LogInfo("193.","move","0","0", time));
-						i++;
-					}
-					
-					
-					
-					for(LogInfo temp: server.getValidActions())
-					{
-						System.out.println("Valid are: "+temp.getSenderName());
-					}
+
 				 }
 				
 				
@@ -249,7 +243,7 @@ public class Server extends Node implements java.io.Serializable{
 		for(Node item: Server.getServerList().keySet()){
 			System.out.println(item.getName()+"   "+item.getIP());
 			System.out.println(Server.getServerList().get(item).getServerID()+" Alive:"+ Server.getServerList().get(item).isAlive()
-								+" TimeStamp:"+ Server.getServerList().get(item).getTimeLastPingSent());
+								+" TimeStamp:"+ Server.getServerList().get(item).getRemoteNodeTimeLastPingSent());
 		}
 		System.out.println("Leaving from server list:");
 	}
@@ -518,6 +512,28 @@ public class Server extends Node implements java.io.Serializable{
 		}		
 	}
 	
+	
+	public static ClientServer getClientReg(Node client)
+	{
+		ClientServer clientCommunication = null;
+		try {
+			clientCommunication = (ClientServer) 
+			Naming.lookup("rmi://"+client.getIP()+":"+String.valueOf(Constants.SERVER_CLIENT_RMI_PORT)
+					+"/"+client.getName());
+		} catch (MalformedURLException e) {
+			//e.printStackTrace();
+		} catch (RemoteException e) {
+			//e.printStackTrace();
+		} catch (NotBoundException e) {
+			//e.printStackTrace();
+		}		//getClientInfo returns from ClientList
+																//clientIp and clientName
+		System.out.println("Getting Registry from "+ client.getName());
+		return clientCommunication;
+	}
+	
+	
+	
 	//refresh the subscription time
 	public void sendServerServerPing() throws MalformedURLException {
 
@@ -580,7 +596,7 @@ public class Server extends Node implements java.io.Serializable{
 	 ----------------------------------------------------		
 	*/
 
-	public static HashMap<Node,ClientPlayerInfo> getClientList() {
+	public static ConcurrentHashMap<Node,ClientPlayerInfo> getClientList() {
 		return clientList;
 	}
 	
@@ -603,7 +619,7 @@ public class Server extends Node implements java.io.Serializable{
 		return Server.getBattlefield().getUnit(x, y);
 	}
 
-	public static HashMap<Node, ServerInfo> getServerList() {
+	public static ConcurrentHashMap<Node, ServerInfo> getServerList() {
 		return serverList;
 	}
 	
@@ -617,7 +633,7 @@ public class Server extends Node implements java.io.Serializable{
 	}
 	
 	
-	public Map<String, LogInfo> getPendingActions() {
+	public static Map<String, LogInfo> getPendingActions() {
 		return PendingActions;
 	}
 	//	public synchronized void setPendingActions(int key,LogInfo value) {
@@ -629,7 +645,7 @@ public class Server extends Node implements java.io.Serializable{
 		PendingActions.remove(key);;
 	}
 
-	public ArrayList<LogInfo> getValidActions() {
+	public static ArrayList<LogInfo> getValidActions() {
 		return ValidActions;
 	}
 

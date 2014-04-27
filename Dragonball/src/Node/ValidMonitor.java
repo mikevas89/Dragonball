@@ -2,6 +2,7 @@ package Node;
 
 import java.util.ArrayList;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 import messages.MessageType;
@@ -16,11 +17,12 @@ import units.Unit;
 
 public class ValidMonitor implements Runnable{
 
-	private Server serverOwner;
+	private Map<String,LogInfo> pendingActions;
 	private ArrayList<LogInfo> validActions;
 	private BlockingQueue<LogInfo> validBlockQueue;
 	
-	public ValidMonitor(Server serverOwner, ArrayList<LogInfo> validActions, BlockingQueue<LogInfo> validBlockQueue){
+	public ValidMonitor(Map<String,LogInfo> pendingActions, ArrayList<LogInfo> validActions, BlockingQueue<LogInfo> validBlockQueue){
+		this.setPendingActions(pendingActions);
 		this.setValidActions(validActions);
 		this.setValidBlockQueue(validBlockQueue);
 	}
@@ -34,6 +36,8 @@ public class ValidMonitor implements Runnable{
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+			System.out.println("ValidMonitor : ActionToValid-> "+ newAction.toString());
+			
 			//A Removed Action has received from other Server
 			if(newAction.getAction().equals(Action.Removed)){
 				ListIterator<Unit> it =Server.getBattlefield().getUnits().listIterator();
@@ -103,7 +107,7 @@ public class ValidMonitor implements Runnable{
 			Unit targetUnit= Server.getBattlefield().getUnitByUnitID(newAction.getTargetUnitID());
 			if(((targetUnit instanceof Player) || (targetUnit instanceof Dragon)) && (targetUnit.getHitPoints()<=0)){
 				System.err.println("Valid Monitor went to unsubscribed");
-				Runnable messageSender = new UnSubscribeMessageSender(this.getServerOwner(),targetUnit);
+				Runnable messageSender = new UnSubscribeMessageSender(this.getPendingActions(),targetUnit);
 				new Thread(messageSender).start();
 				LogInfo playerDown = new LogInfo(Action.Removed,targetUnit.getUnitID(), targetUnit.getX(),targetUnit.getY(),
 													targetUnit.getType(targetUnit.getX(),targetUnit.getY()),
@@ -121,6 +125,11 @@ public class ValidMonitor implements Runnable{
 		}
 	}
 
+	/*----------------------------------------------------
+		GETTERS AND SETTERS
+	----------------------------------------------------		
+*/
+	
 	public ArrayList<LogInfo> getValidActions() {
 		return validActions;
 	}
@@ -137,12 +146,12 @@ public class ValidMonitor implements Runnable{
 		this.validBlockQueue = validBlockQueue;
 	}
 
-	public Server getServerOwner() {
-		return serverOwner;
+	public Map<String,LogInfo> getPendingActions() {
+		return pendingActions;
 	}
 
-	public void setServerOwner(Server serverOwner) {
-		this.serverOwner = serverOwner;
+	public void setPendingActions(Map<String,LogInfo> pendingActions) {
+		this.pendingActions = pendingActions;
 	}
 
 }

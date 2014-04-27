@@ -40,6 +40,9 @@ public class ClientRMI extends UnicastRemoteObject implements ClientServer {
 		// if the message is not a proper ClientServerMessage, it is discarded
 		if (!(message instanceof ClientServerMessage))
 			return;
+		
+		//issued time of Message in the Client
+		message.setTimeIssuedFromServer(System.currentTimeMillis());
 
 		Thread handlerMessage = new Thread(new Runnable() {
 
@@ -54,8 +57,11 @@ public class ClientRMI extends UnicastRemoteObject implements ClientServer {
 				case GetBattlefield:
 					clientOwner.onBattleFieldMessageReceived(csMessage);
 					break;
+				case ServerClientPing:
+					clientOwner.onServerClientPingMessageReceived(csMessage);
 				case UnSubscribeFromServer:
 					clientOwner.onUnSubscribeFromServerMessageReceived(csMessage);
+					break;
 				case RedirectConnection:
 					try {
 						clientOwner.onRedirectServerMessageReceived(csMessage);
@@ -63,6 +69,7 @@ public class ClientRMI extends UnicastRemoteObject implements ClientServer {
 							| NotBoundException e) {
 						e.printStackTrace();
 					}
+					break;
 				default:
 					break;
 				}

@@ -25,6 +25,7 @@ import java.rmi.registry.Registry;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 
 import structInfo.Constants;
 import structInfo.Directions;
@@ -64,14 +65,14 @@ public class Client extends Node{
 	private int unitID; //unique ID returned from Server
 	private static  BattleField battlefield;
 	
-	private static HashMap<Node, ServerInfo> serverList;
+	private static ConcurrentHashMap<Node, ServerInfo> serverList;
 	
 
 
 
 	public Client() throws IOException{
 		super();
-		serverList = new HashMap<Node, ServerInfo>();
+		serverList = new ConcurrentHashMap<Node, ServerInfo>();
 		
 		int numClient = this.getUniqueIdForName("Clientid.txt");
 		//unique name of Client
@@ -155,7 +156,7 @@ public class Client extends Node{
 				//server.setName(Client.getServerList().get(firstServer).getName());
 				//server.setIP(Client.getServerList().get(firstServer).getIP());
 				//put names for testing
-				server.setName("Server2");
+				server.setName("Server1");
 				server.setIP("127.0.0.1");
 				
 				System.out.println(server.getIP());
@@ -193,12 +194,20 @@ public class Client extends Node{
 						
 						Thread.sleep(Constants.CLIENT_PERIOD_ACTION);
 						
+						ServerInfo serverInfo = Client.getServerList().get(client.serverConnected);
+							//no response from the connected Server
+							if(System.currentTimeMillis() - serverInfo.getRemoteNodeTimeLastPingSent() > 2* Constants.SERVER2CLIENT_TIMEOUT){
+								client.serverTimeoutTimer.cancel();
+								client.running=false;
+							}
+						
+						
 						// Randomly choose one of the four wind directions to move to if there are no units present
 						direction = Directions.values()[ (int)(Directions.values().length * Math.random()) ];
 						adjacentUnitType = UnitType.undefined;
 
 						Unit myUnit= client.getUnitFromBattleFieldList();
-						if(myUnit == null)
+						if(myUnit == null && client.running==true)
 						{
 							System.err.println("Client: Cannot find my player");
 							client.running=false;
@@ -339,16 +348,15 @@ public class Client extends Node{
 		ClientServer serverCommunication = null;
 		try {
 			serverCommunication = (ClientServer) 
-			Naming.lookup("rmi://"+server.getIP()
+			Naming.lookup("rmi://"+server.getIP()+":"+String.valueOf(Constants.SERVER_CLIENT_RMI_PORT)
 					+"/"+server.getName());
 		} catch (MalformedURLException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		} catch (RemoteException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		} catch (NotBoundException e) {
-			e.printStackTrace();
-		}		//getClientInfo returns from ClientList
-																//clientIp and clientName
+			//e.printStackTrace();
+		}
 		System.out.println("Getting Registry from  "+server.getName());
 		//TODO: if connection error appears (throws exception), then connect to other server 
 		
@@ -547,7 +555,44 @@ public class Client extends Node{
 			System.out.println("BattleFiled updated from the Server");
 			//update the battlefield of the subscribed client
 			this.recomputeBattleField(message.getBattlefield());
+			
+			//update ping timestamp from server 
+			for(ServerInfo serverInfo: Client.getServerList().values()){
+				if(!serverInfo.getName().equals(this.serverConnected.getName()))
+					continue;
+				//change the timestamp of the last ping from server
+				serverInfo.setRemoteNodeTimeLastPingSent(message.getTimeIssuedFromServer());
+				Client.getServerList().replace(new Node(this.serverConnected.getName(), this.serverConnected.getIP()),serverInfo);
+			}	
 		}
+	}
+	
+
+	public void onServerClientPingMessageReceived(ClientServerMessage message) {
+		if(message.getSender().equals(this.serverConnected.getName())){
+			System.out.println("onServerClientPingMessageReceived");
+			//send immediately to Server because the connection is at stake
+			new Thread(new Runnable(){
+				@Override
+				public void run() {
+					try {
+						sendClientServerPing();
+					} catch (MalformedURLException e) {
+						e.printStackTrace();
+					}
+					
+				}
+			}).start();
+			//update ping timestamp from server 
+			for(ServerInfo serverInfo: Client.getServerList().values()){
+				if(!serverInfo.getName().equals(this.serverConnected.getName()))
+					continue;
+				//change the timestamp of the last ping from server
+				serverInfo.setRemoteNodeTimeLastPingSent(message.getTimeIssuedFromServer());
+				Client.getServerList().replace(new Node(this.serverConnected.getName(), this.serverConnected.getIP()),serverInfo);
+			}	
+		}
+		
 	}
 	
 
@@ -603,7 +648,7 @@ public class Client extends Node{
 	----------------------------------------------------		
 	 */
 	
-	public static HashMap<Node,ServerInfo> getServerList() {
+	public static ConcurrentHashMap<Node,ServerInfo> getServerList() {
 		return serverList;
 	}
 	
@@ -639,6 +684,9 @@ public class Client extends Node{
 	public void setServerConnected(Node serverConnected) {
 		this.serverConnected = serverConnected;
 	}
+
+
+
 
 
 
