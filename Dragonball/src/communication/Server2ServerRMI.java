@@ -29,6 +29,8 @@ import structInfo.LogInfo.Action;
 import structInfo.Constants;
 import structInfo.ServerInfo;
 import structInfo.UnitType;
+import units.Unit;
+
 import messages.Message;
 import messages.MessageType;
 import messages.ServerServerMessage;
@@ -85,6 +87,9 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		case Subscribe2Server:
 			onServerSubscribe2ServerMessageReceived(serverServerMessage);
 			break;
+		case ServerSubscribedAck:
+			onServerSubscribe2ServerMessageReceived(serverServerMessage);
+			break;
 		case RequestBattlefield:
 			onRequestBattlefieldMessageReceived(serverServerMessage);
 			break;
@@ -119,8 +124,8 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 
 	private void onRequestBattlefieldMessageReceived(ServerServerMessage message) {
 		System.out.println("SS8 "+System.currentTimeMillis()+" onRequestBattlefieldMessageReceived");
-		Node serverSender=new Node(message.getSender(),message.getSender());
-		ServerInfo serverInfo= Server.getServerList().get((serverSender));
+		Node serverSender=new Node(message.getSender(),message.getSenderIP());
+		ServerInfo serverInfo= Server.getServerList().get(serverSender);
 
 		if(serverInfo==null){
 			System.err.println("Unknown Server: "+ message.getSender() +" requests the Battlefield");
@@ -156,7 +161,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 
 	}
 
-	private void onServerSubscribe2ServerMessageReceived(ServerServerMessage message) throws RemoteException {
+	private void onServerSubscribe2ServerMessageReceived(ServerServerMessage message){
 		
 		System.out.println("Server: onSubscribe2ServerMessageReceived from "+ message.getSender()+ " "+ message.getSenderIP());
 		Node serverSender=new Node(message.getSender(),message.getSenderIP());
@@ -177,10 +182,11 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		Server.getServerList().put(serverSender, serverInfo);
 		Server.printlist();
 		
-		System.err.println("ServerSubscribedAck has to be sent");
 		
 		if(message.getMessageTypeRequest().equals(MessageType.ServerSubscribedAck))
 			return;
+		
+		System.out.println("ServerSubscribedAck has to be sent");
 		
 		//With this message, Server sends the OK subscription to the Server
 		 ServerServerMessage sendSubscribed = new ServerServerMessage(
@@ -190,7 +196,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 												serverSender.getName(),
 												serverSender.getIP());
 		 
-		 System.err.println("ServerSubscribedAck is sent");
+		 System.out.println("ServerSubscribedAck is sent");
 		 
 		 sendSubscribed.setContent("serverID", String.valueOf(Server.getMyServerID()));
 		 //send my number of clients
@@ -219,23 +225,28 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 
 
 	private void onProblematicServerMessageReceived(ServerServerMessage message) {
+		System.out.println("onProblematicServerMessageReceived");
 		Node problematicServer = message.getProblematicServerToCheck();
 		
 		ServerInfo serverInfo = Server.getServerList().get(problematicServer);
 		if(serverInfo.isProblematicServer())
 			return;
-		
+		//update the info for that server
 		serverInfo.setProblematicServer(true);
-		serverInfo.setNumAnswersAgreeRemovingServer(serverInfo.getNumAnswersAgreeRemovingServer()+1);//first vote from the sender
+		serverInfo.setNodeFoundTheProblematicServer(new Node(message.getSender(),message.getSenderIP()));
+		//first vote from the sender
+		serverInfo.setNumAnswersAgreeRemovingServer(serverInfo.getNumAnswersAgreeRemovingServer()+1);
 		
 		Runnable pingMonitorSender=null;
 		//current server decides about problematicServer 
 		if(System.currentTimeMillis() - serverInfo.getRemoteNodeTimeLastPingSent() > Constants.SERVER2SERVER_PING_PERIOD){
+			System.out.println(Server.getMyInfo().getName()+" Agree for "+ serverInfo.getName());
 			serverInfo.setNumAnswersAgreeRemovingServer(serverInfo.getNumAnswersAgreeRemovingServer()+1);
 			pingMonitorSender=new PingMonitorSender(problematicServer,MessageType.ResponseProblematicServer,
 					PingMonitorSender.DecisionType.Agree);
 		}
 		else{
+			System.out.println(Server.getMyInfo().getName()+" DisAgree for "+ serverInfo.getName());
 			serverInfo.setNumAnswersNotAgreeRemovingServer(serverInfo.getNumAnswersNotAgreeRemovingServer()+1);
 			pingMonitorSender=new PingMonitorSender(problematicServer,MessageType.ResponseProblematicServer,
 					PingMonitorSender.DecisionType.Disagree);
@@ -249,17 +260,43 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		
 		System.out.println("SS5 "+System.currentTimeMillis()+" MESSAGE" );
 
+		if(serverInfo.getTotalNumAnswersAggreement() >= (Server.getNumAliveServers() - Server.getNumProblematicServers())){
+			//ready to decide
+			this.serverOwner.DecideForRemoval(problematicServer);
+		}
+			
 	}
 	
 
 	private void onResponseProblematicServerMessageReceived(ServerServerMessage message) {
 		System.out.println("SS6 "+System.currentTimeMillis()+" MESSAGE" );
+		System.out.println("onResponseProblematicServerMessageReceived");
+		Node problematicServer = message.getProblematicServerToCheck();
+		ServerInfo serverInfo = Server.getServerList().get(problematicServer);
+		if(!serverInfo.isProblematicServer())
+			System.err.println("ResponseProblematicServer : ProblematicServer is not true in ServerList");
+		
+		switch(message.getContent().get("Decision")){
+		case "Agree":
+			serverInfo.setNumAnswersAgreeRemovingServer(serverInfo.getNumAnswersAgreeRemovingServer()+1);
+			break;
+		case "Disagree":
+			serverInfo.setNumAnswersNotAgreeRemovingServer(serverInfo.getNumAnswersNotAgreeRemovingServer()+1);
+			break;
+		}
+		serverInfo.setTotalNumAnswersAggreement(serverInfo.getTotalNumAnswersAggreement()+1);
+		Server.getServerList().replace(problematicServer, serverInfo);
+		if(serverInfo.getTotalNumAnswersAggreement() < Server.getNumAliveServers() - Server.getNumProblematicServers())
+					return;
+		
+		//ready to decide
+		this.serverOwner.DecideForRemoval(problematicServer);
 		
 	}
 	
 	
 	private void onCheckPendingMessageReceived(ServerServerMessage message) {
-		
+		System.out.println("onCheckPendingMessageReceived");
 		boolean hasToReplyPendingInvalid=false;
 		
 		LogInfo messagePendingMove = message.getActionToBeChecked();
@@ -325,13 +362,16 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 
 	private void onServerServerPingMessageReceived(ServerServerMessage message) {
 		System.out.println("SS1 "+System.currentTimeMillis()+" onServerServerPingMessageReceived");
-		Node server = new Node(message.getSender(), message.getSender());
-		ServerInfo result = Server.getServerList().get(server);
-		if (result == null)
+		System.out.println("onServerServerPingMessageReceived");
+		
+		Node server = new Node(message.getSender(), message.getSenderIP());
+		ServerInfo serverInfo = Server.getServerList().get(server);
+		if (serverInfo == null)
 			return; // client is not player in my database
-		result.setRemoteNodeTimeLastPingSent(System.currentTimeMillis());
-		Server.getServerList().remove(server);
-		Server.getServerList().put(server, result);
+		if(!serverInfo.isAlive())
+			return;
+		serverInfo.setRemoteNodeTimeLastPingSent(System.currentTimeMillis());
+		Server.getServerList().replace(server, serverInfo);
 	}
 
 	public Server getServerOwner() {

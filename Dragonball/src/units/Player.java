@@ -45,6 +45,8 @@ public class Player extends Unit implements Serializable {
 				battlefield);
 		//serverID+unitID
 		this.setUnitID(Integer.parseInt(String.valueOf(serverID)+String.valueOf(this.getUnitID())));
+		//keep the serverID unit belongs
+		this.setServerOwnerID(serverID);
 		System.out.println("New Player : UnitID: " + this.getUnitID() );
 
 		/* Create a random delay */

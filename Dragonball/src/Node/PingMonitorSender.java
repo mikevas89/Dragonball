@@ -8,7 +8,10 @@ import java.rmi.RemoteException;
 import java.util.Enumeration;
 import java.util.Iterator;
 
+import structInfo.LogInfo;
 import structInfo.ServerInfo;
+import structInfo.LogInfo.Action;
+import units.Unit;
 
 
 
@@ -106,8 +109,43 @@ public class PingMonitorSender implements Runnable{
 					e.printStackTrace();
 				 }
 				
-				 System.out.println("Server: ProblematicServer sent to Server"+ server.getName()+ "serverIP: "+ server.getIP());
+				 System.out.println("Server: ProblematicServer sent to "+ server.getName()+ " serverIP: "+ server.getIP());
 			}
+			System.err.println("onPingMonitorSender -> Problematic Server");
+			// only one non-problematic server in the network
+			if (Server.getNumAliveServers() - Server.getNumProblematicServers() == 1) {
+				System.out.println("PingMonitorSender: Server:"+Server.getMyInfo().getName()
+									+ " REMOVE server "+ this.getReferencedNode().getName());
+				// remove the current info for the server decided to remove
+				ServerInfo serverInfoForRemovedServer = Server.getServerList()
+						.get(this.getReferencedNode());
+				// remove players of the server
+				for (Unit unit : Server.getBattlefield().getUnits()) {
+					if (unit.getServerOwnerID() == serverInfoForRemovedServer.getServerID()) {
+						LogInfo playerDown = new LogInfo(Action.Removed,
+								unit.getUnitID(), unit.getX(), unit.getY(),
+								unit.getType(unit.getX(), unit.getY()),
+								unit.getUnitID(), unit.getX(), unit.getY(),
+								unit.getType(unit.getX(), unit.getY()),
+								System.currentTimeMillis(), "0.0.0.0");
+						try {
+							Server.getValidBlockQueue().put(playerDown);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+
+				Server.getServerList().replace(this.getReferencedNode(),
+								new ServerInfo(serverInfoForRemovedServer
+										.getName(), serverInfoForRemovedServer
+										.getIP(), serverInfoForRemovedServer
+										.getServerID(), false));
+
+				System.err.println(Server.getMyInfo().getName()+ " : REMOVE SERVER : " + this.getReferencedNode().getName());
+				Server.printlist();
+			}
+			
 			break;
 		case ResponseProblematicServer:
 			for(Iterator<ServerInfo> it = Server.getServerList().values().iterator();it.hasNext();){
@@ -118,7 +156,8 @@ public class PingMonitorSender implements Runnable{
 				if(entry.isProblematicServer() || !entry.isAlive())
 					continue;
 				
-				//With this message, Server sends the ProblematicServer that the other Server should agree to remove
+				//With this message, Server sends the response to ProblematicServer request and contains the decision
+							//that the current Server agrees or not to remove the server contained in the message
 				 ServerServerMessage sendProblematicServer = new ServerServerMessage(
 														MessageType.ResponseProblematicServer,
 														Server.getMyInfo().getName(),
@@ -146,14 +185,10 @@ public class PingMonitorSender implements Runnable{
 			break;
 		default:
 			break;
-		
 		}
-		
 	}
 	
-	
-	
-	
+		
 	
 	/*----------------------------------------------------
 		GETTERS AND SETTERS

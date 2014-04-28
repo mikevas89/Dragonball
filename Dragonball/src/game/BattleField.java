@@ -323,7 +323,7 @@ public class BattleField  implements java.io.Serializable{
 	}
 
 	public void copyListUnits(List<Unit> list){
-		this.units = Collections.synchronizedList(new ArrayList<Unit>(list));
+		Collections.copy(this.units, list);
 	}
 	
 	public Unit[][] getMap(){

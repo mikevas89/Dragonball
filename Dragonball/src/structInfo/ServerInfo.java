@@ -1,4 +1,6 @@
 package structInfo;
+
+import Node.Node;
 	
 	public class ServerInfo{
 		private String Name;
@@ -11,6 +13,7 @@ package structInfo;
 		private boolean runsGame; //server is running the game (only if clients are connected)
 		
 		private boolean problematicServer; //server finds out that this server does not respond
+		private Node nodeFoundTheProblematicServer; //keeps track of the node that started the agreement procedures
 		private int totalNumAnswersAggreement; //broadcast messages to agree about removing server
 		private int numAnswersAgreeRemovingServer;
 		private int numAnswersNotAgreeRemovingServer;
@@ -108,6 +111,15 @@ package structInfo;
 		public void setNumAnswersNotAgreeRemovingServer(
 				int numAnswersNotAgreeRemovingServer) {
 			this.numAnswersNotAgreeRemovingServer = numAnswersNotAgreeRemovingServer;
+		}
+
+		public Node getNodeFoundTheProblematicServer() {
+			return nodeFoundTheProblematicServer;
+		}
+
+		public void setNodeFoundTheProblematicServer(
+				Node nodeFoundTheProblematicServer) {
+			this.nodeFoundTheProblematicServer = nodeFoundTheProblematicServer;
 		}
 	}
 	
