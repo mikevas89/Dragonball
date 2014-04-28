@@ -538,7 +538,7 @@ public class Client extends Node{
 	public void onSubscribeMessageReceived(ClientServerMessage message){
 		
 		if(message.getSender().equals(this.serverConnected.getName())){
-			System.out.println("Connection Established from the Server - Subscription Completed");
+			System.out.println("C1 "+System.currentTimeMillis()+" Connection Established from the Server - Subscription Completed");
 			//content collection of the message contains the unique clientID
 			this.setUnitID(Integer.parseInt(message.getContent().get("unitID")));
 			System.out.println("Client: Received unitID "+ this.getUnitID());
@@ -552,7 +552,7 @@ public class Client extends Node{
 	
 	public void onBattleFieldMessageReceived(ClientServerMessage message){
 		if(message.getSender().equals(this.serverConnected.getName())){
-			System.out.println("BattleFiled updated from the Server");
+			System.out.println("C2 "+System.currentTimeMillis()+" BattleFiled updated from the Server ");
 			//update the battlefield of the subscribed client
 			this.recomputeBattleField(message.getBattlefield());
 			
@@ -570,7 +570,7 @@ public class Client extends Node{
 
 	public void onServerClientPingMessageReceived(ClientServerMessage message) {
 		if(message.getSender().equals(this.serverConnected.getName())){
-			System.out.println("onServerClientPingMessageReceived");
+			System.out.println("C3 "+System.currentTimeMillis()+" onServerClientPingMessageReceived");
 			//send immediately to Server because the connection is at stake
 			new Thread(new Runnable(){
 				@Override
@@ -598,7 +598,7 @@ public class Client extends Node{
 
 	public void onUnSubscribeFromServerMessageReceived(ClientServerMessage message) {
 		if(message.getSender().equals(this.serverConnected.getName())){
-			System.out.println("Client: onUnSubscribeFromServerMessageReceived");
+			System.out.println("C1 "+System.currentTimeMillis()+" Client: onUnSubscribeFromServerMessageReceived");
 			this.recomputeBattleField(message.getBattlefield());
 			this.running=false;	
 			serverTimeoutTimer.cancel();

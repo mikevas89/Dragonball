@@ -3,6 +3,12 @@ package communication;
 import interfaces.ServerServer;
 
 
+
+
+
+
+
+
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -12,12 +18,17 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 
+
+
+
+
+
+
 import structInfo.LogInfo;
 import structInfo.LogInfo.Action;
 import structInfo.Constants;
 import structInfo.ServerInfo;
 import structInfo.UnitType;
-
 import messages.Message;
 import messages.MessageType;
 import messages.ServerServerMessage;
@@ -91,7 +102,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 
 
 	private void onPendingMoveInvalidMessageReceived(ServerServerMessage message) {
-		System.out.println("onPendingMoveInvalidMessageReceived");
+		System.out.println("SS3 "+System.currentTimeMillis()+" onPendingMoveInvalidMessageReceived");
 		Map<String, LogInfo> pendingLog = Server.getPendingActions();
 		//iterate and remove the pending invalid move
 		for(Iterator<Entry<String, LogInfo>> it= pendingLog.entrySet().iterator();it.hasNext();){
@@ -107,7 +118,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 	}
 
 	private void onRequestBattlefieldMessageReceived(ServerServerMessage message) {
-		System.out.println("onRequestBattlefieldMessageReceived");
+		System.out.println("SS8 "+System.currentTimeMillis()+" onRequestBattlefieldMessageReceived");
 		Node serverSender=new Node(message.getSender(),message.getSender());
 		ServerInfo serverInfo= Server.getServerList().get((serverSender));
 
@@ -136,7 +147,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 	}
 
 	private void onGetBattlefieldMessageReceived(ServerServerMessage message) {
-		System.out.println("onGetBattlefieldMessageReceived");
+		System.out.println("SS9 "+System.currentTimeMillis()+" onGetBattlefieldMessageReceived");
 		
 		System.out.println("BattleFieled updated from the Server "+ message.getSender()+" to Server "+ message.getReceiver());
 		//update the battlefield of the subscribed client
@@ -196,13 +207,14 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 			e.printStackTrace();
 		 }
 		
-		 System.out.println("Server: ACK sent to Server"+ serverSender.getName()+ "serverID: "+ serverInfo.getServerID());
+		 System.out.println("SS7 "+System.currentTimeMillis()+" Server: ACK sent to Server"+ serverSender.getName()+ "serverID: "+ serverInfo.getServerID());
 		
 	}
 
 	private void onSendValidActionMessageReceived(ServerServerMessage message) {
 		//TODO
 		//TODO
+		System.out.println("SS4 "+System.currentTimeMillis()+" MESSAGE" );
 	}
 
 
@@ -234,12 +246,14 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		Server.getServerList().replace(problematicServer, serverInfo);
 		//broadcast node's decision
 		new Thread(pingMonitorSender).start();
+		
+		System.out.println("SS5 "+System.currentTimeMillis()+" MESSAGE" );
 
 	}
 	
 
 	private void onResponseProblematicServerMessageReceived(ServerServerMessage message) {
-		
+		System.out.println("SS6 "+System.currentTimeMillis()+" MESSAGE" );
 		
 	}
 	
@@ -306,11 +320,11 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 			e.printStackTrace();
 		 }
 		
-		 System.out.println("Server: PendingMoveInvalid sent to Server"+ message.getSender()+ "serverIP: "+ message.getSender());
+		 System.out.println("SS2 "+System.currentTimeMillis()+" Server: PendingMoveInvalid sent to Server"+ message.getSender()+ "serverIP: "+ message.getSender());
 	}
 
 	private void onServerServerPingMessageReceived(ServerServerMessage message) {
-		System.out.println("onServerServerPingMessageReceived");
+		System.out.println("SS1 "+System.currentTimeMillis()+" onServerServerPingMessageReceived");
 		Node server = new Node(message.getSender(), message.getSender());
 		ServerInfo result = Server.getServerList().get(server);
 		if (result == null)

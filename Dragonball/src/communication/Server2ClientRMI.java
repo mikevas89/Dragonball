@@ -4,11 +4,15 @@ import interfaces.ClientServer;
 import interfaces.ServerServer;
 
 
+
+
+
+
+
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-
 import java.rmi.server.UnicastRemoteObject;
 
 import messages.ClientServerMessage;
@@ -99,7 +103,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 	*/
 	
 	private void onClientServerPingMessageReceived(Message message) {
-		System.out.println("onClientServerPingMessageReceived");
+		System.out.println("SC1 "+System.currentTimeMillis()+" onClientServerPingMessageReceived");
 		Node client=new Node(message.getSender(),message.getSenderIP());
 		ClientPlayerInfo result = Server.getClientList().get(client);
 		if(result==null) return; //client is not player in my database
@@ -109,7 +113,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 	
 	public void onSubscribe2ServerMessageReceived(Message message){
 		
-		System.out.println("Server: onSubscribe2ServerMessageReceived");
+		System.out.println("SC2 "+System.currentTimeMillis()+" Server: onSubscribe2ServerMessageReceived");
 		
 		Node client=new Node(message.getSender(),message.getSenderIP());
 		//checking if client is already subscribed
@@ -215,6 +219,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 	
 	private void onUnSubscribeFromServerMessageReceived(ClientServerMessage message) {
 		Node client=new Node(message.getSender(),message.getSenderIP());
+		System.out.println("SC3 "+System.currentTimeMillis()+" MESSAGE");
 		if(!Server.getClientList().containsKey(client)){
 			System.err.println("Unknown Client: "+ message.getSender() +" tries to unsubscribe");
 			return;
@@ -223,7 +228,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 	}
 	
 	private void onActionMessageReceived(ClientServerMessage message) {
-		System.out.println("Server: onActionMessageReceived");
+		System.out.println("SC4 "+System.currentTimeMillis()+" Server: onActionMessageReceived");
 		//Node client=new Node(message.getSender(),message.getSenderIP());
 
 		int senderUnitID=Integer.parseInt(message.getContent().get("UnitID"));
@@ -312,6 +317,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 																NotBoundException, MalformedURLException {
 		Node client=new Node(message.getSender(),message.getSenderIP());
 		ClientPlayerInfo player= Server.getClientList().get((client));
+		System.out.println("SC5 "+System.currentTimeMillis()+" MESSAGE");
 		if(player==null){
 			System.err.println("Unknown Client: "+ message.getSender() +" tries to get Battlefield");
 			return;
