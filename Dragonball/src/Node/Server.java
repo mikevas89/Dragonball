@@ -23,7 +23,9 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -39,6 +41,7 @@ import structInfo.ClientPlayerInfo;
 import structInfo.Constants;
 import structInfo.LogInfo;
 import structInfo.ServerInfo;
+import structInfo.LogInfo.Action;
 import units.Player;
 import units.Unit;
 import Node.Node;
@@ -58,13 +61,13 @@ public class Server extends Node implements java.io.Serializable{
 	
 	public static final int MIN_PLAYER_COUNT = 30;
 	public static final int MAX_PLAYER_COUNT = 60;
-	public static final int DRAGON_COUNT = 50;
+	public static final int DRAGON_COUNT = 2;
 	public static final int TIME_BETWEEN_PLAYER_LOGIN = 5000; // In milliseconds
 	
 	private static BattleField battlefield; 
 	private static Map<String, LogInfo> PendingActions; //pending moves
 	private static ArrayList<LogInfo> ValidActions; //log of the valid actions
-	private final BlockingQueue<LogInfo> validBlockQueue;//intermediate between valid and pending
+	private static BlockingQueue<LogInfo> validBlockQueue;//intermediate between valid and pending
 	
 	public volatile static boolean killServer = false;
 	
@@ -240,10 +243,14 @@ public class Server extends Node implements java.io.Serializable{
 	
 	public static void printlist()
 	{	System.out.println("Printing server list:");
-		for(Node item: Server.getServerList().keySet()){
-			System.out.println(item.getName()+"   "+item.getIP());
-			System.out.println(Server.getServerList().get(item).getServerID()+" Alive:"+ Server.getServerList().get(item).isAlive()
-								+" TimeStamp:"+ Server.getServerList().get(item).getRemoteNodeTimeLastPingSent());
+		for(ServerInfo serverInfo: Server.getServerList().values()){
+			System.out.println(serverInfo.getName()+"   "+serverInfo.getIP());
+			System.out.println("ID: "+ serverInfo.getServerID()+" Alive:"+ serverInfo.isAlive()+
+									" ProblematicServer:"+ serverInfo.isProblematicServer()+
+									" TimeStamp:"+ serverInfo.getRemoteNodeTimeLastPingSent()+
+									" Total:"+ serverInfo.getTotalNumAnswersAggreement()+
+									" Agree:"+ serverInfo.getNumAnswersAgreeRemovingServer()+
+									" Disagree:"+ serverInfo.getNumAnswersNotAgreeRemovingServer());
 		}
 		System.out.println("Leaving from server list:");
 	}
@@ -504,11 +511,7 @@ public class Server extends Node implements java.io.Serializable{
 	public class SchedulingTimer extends TimerTask{
 		@Override
 		public void run() {
-			try {
-				sendServerServerPing();
-			} catch (MalformedURLException e) {
-				e.printStackTrace();
-			}			
+			sendServerServerPing();			
 		}		
 	}
 	
@@ -535,7 +538,7 @@ public class Server extends Node implements java.io.Serializable{
 	
 	
 	//refresh the subscription time
-	public void sendServerServerPing() throws MalformedURLException {
+	public void sendServerServerPing() {
 
 		for (ServerInfo serverInfo : Server.getServerList().values()) {
 			if (!serverInfo.isAlive())
@@ -557,9 +560,9 @@ public class Server extends Node implements java.io.Serializable{
 			try {
 				serverComm.onMessageReceived(pingMessage);
 			} catch (RemoteException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 			} catch (NotBoundException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 			}
 
 		}
@@ -588,6 +591,60 @@ public class Server extends Node implements java.io.Serializable{
 		System.out.println("getServerReg to "+ server.getName());
 		return serverCommunication;
 	}
+	
+	public void DecideForRemoval(Node problematicServer){
+		System.err.println(Server.getMyInfo().getName()+ " Ready to Decide");
+		ServerInfo serverInfo = Server.getServerList().get(problematicServer);
+		
+		//at the last message, a removal will be decided
+				Node serverToRemove=null;
+				if(serverInfo.getNumAnswersAgreeRemovingServer() >= serverInfo.getTotalNumAnswersAggreement()/2)
+					//remove problematic server
+					serverToRemove=problematicServer;
+				else
+					//remove the server started the Agreement procedure
+					serverToRemove=serverInfo.getNodeFoundTheProblematicServer(); 
+				
+				System.err.println("Server:"+Server.getMyInfo().getName()+ " Decision Reached: Server Down: "+ serverToRemove.getName());
+			
+				if((serverToRemove.getName().equals(Server.getMyInfo().getName()) && 
+						serverToRemove.getIP().equals(Server.getMyInfo().getIP()))){
+					System.out.println("Problematic Server is the current");
+					Server.getMyInfo().setAlive(false);
+					Server.getMyInfo().setRunsGame(false);
+					Server.getPendingActions().clear();
+					Server.getValidBlockQueue().clear();
+					Server.killServer=true;
+					return;
+				}
+				
+				// remove the current info for the serverList decided to remove
+				ServerInfo serverInfoForRemovedServer = Server.getServerList().get(serverToRemove);
+				// remove players of the server
+				for (Unit unit : Server.getBattlefield().getUnits()) {
+					if (unit.getServerOwnerID() == serverInfoForRemovedServer.getServerID()) {
+						LogInfo playerDown = new LogInfo(Action.Removed,
+								unit.getUnitID(), unit.getX(), unit.getY(),
+								unit.getType(unit.getX(), unit.getY()),
+								unit.getUnitID(), unit.getX(), unit.getY(),
+								unit.getType(unit.getX(), unit.getY()),
+								System.currentTimeMillis(), "0.0.0.0");
+						try {
+							Server.getValidBlockQueue().put(playerDown);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+
+				Server.getServerList().replace(serverToRemove,new ServerInfo(serverInfoForRemovedServer
+										.getName(), serverInfoForRemovedServer
+										.getIP(), serverInfoForRemovedServer
+										.getServerID(), false));
+
+				System.err.println(Server.getMyInfo().getName()+ " : REMOVE SERVER : " + serverToRemove.getName());
+				Server.printlist();
+	}
 		
 		
 	
@@ -595,6 +652,37 @@ public class Server extends Node implements java.io.Serializable{
 				GETTERS AND SETTERS
 	 ----------------------------------------------------		
 	*/
+	
+	public static int getNumAliveServers(){
+		int numAliveServers=1;
+		for(Iterator<ServerInfo> it=Server.getServerList().values().iterator();it.hasNext();){
+			ServerInfo serverInfo = it.next();
+			if(serverInfo.isAlive())
+				numAliveServers++;
+		}
+		return numAliveServers;
+	}
+	
+	public static int getNumProblematicServers(){
+		int numProblematicServers=0;
+		for(Iterator<ServerInfo> it=Server.getServerList().values().iterator();it.hasNext();){
+			ServerInfo serverInfo = it.next();
+			if(serverInfo.isProblematicServer())
+				numProblematicServers++;
+		}
+		return numProblematicServers;
+	}
+	
+	public static int getNumRunningGameServers(){
+		int numRunningGameServers=0;
+		for(Iterator<ServerInfo> it=Server.getServerList().values().iterator();it.hasNext();){
+			ServerInfo serverInfo = it.next();
+			if(serverInfo.isRunsGame())
+				numRunningGameServers++;
+		}
+		return numRunningGameServers;
+	}
+	
 
 	public static ConcurrentHashMap<Node,ClientPlayerInfo> getClientList() {
 		return clientList;
@@ -649,7 +737,7 @@ public class Server extends Node implements java.io.Serializable{
 		return ValidActions;
 	}
 
-	public BlockingQueue<LogInfo> getValidBlockQueue() {
+	public static BlockingQueue<LogInfo> getValidBlockQueue() {
 		return validBlockQueue;
 	}
 

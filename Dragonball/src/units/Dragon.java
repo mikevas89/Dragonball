@@ -52,6 +52,7 @@ public class Dragon extends Unit implements Serializable {
 
 		//serverID+unitID
 		this.setUnitID(Integer.parseInt(String.valueOf(serverID)+String.valueOf(this.getUnitID())));
+		this.setServerOwnerID(serverID);
 		/* Create a random delay */
 		timeBetweenTurns = (int)(Math.random() * (MAX_TIME_BETWEEN_TURNS - MIN_TIME_BETWEEN_TURNS)) + MIN_TIME_BETWEEN_TURNS;
 

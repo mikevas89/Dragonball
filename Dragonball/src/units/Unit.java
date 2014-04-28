@@ -39,6 +39,8 @@ public abstract class Unit implements Serializable {
 
 	// Identifier of the unit
 	private int unitID;
+	
+	private int serverOwnerID;
 
 	
 	// Map messages from their ids
@@ -196,6 +198,14 @@ public abstract class Unit implements Serializable {
 			return UnitType.dragon;
 		else 
 			return UnitType.undefined;
+	}
+
+	public int getServerOwnerID() {
+		return serverOwnerID;
+	}
+
+	public void setServerOwnerID(int serverOwnerID) {
+		this.serverOwnerID = serverOwnerID;
 	}
 	
 	

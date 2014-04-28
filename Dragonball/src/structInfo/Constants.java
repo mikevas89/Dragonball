@@ -25,12 +25,12 @@ public class Constants {
 	
 	//Server PingMonitor/SchedulerTimer for Ping ,  Client Actions/SchedulerTimer for Ping
 	public static final long CLIENT2SERVER_PING_PERIOD=5000;
-	public static final long SERVER2SERVER_PING_PERIOD=20000;
+	public static final long SERVER2SERVER_PING_PERIOD=5000;
 	public static final long SERVER2CLIENT_TIMEOUT = 2* CLIENT2SERVER_PING_PERIOD;
-	public static final long SERVER2SERVER_TIMEOUT = 5000;
+	public static final long SERVER2SERVER_TIMEOUT = 20000;
 	
 	//Server PingMonitor , it is calculated according to the smallest Timeout PingMonitor checks for Pings -> SERVER2SERVER_TIMEOUT
-	public static final long PING_MONITOR_CHECKING_PERIOD =  SERVER2SERVER_TIMEOUT / 5; 
+	public static final long PING_MONITOR_CHECKING_PERIOD =  SERVER2SERVER_PING_PERIOD / 3; 
 	
 	
 	
