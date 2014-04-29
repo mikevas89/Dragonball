@@ -78,17 +78,6 @@ public class UnSubscribeMessageSender implements Runnable{
 			}
 		}
 		
-		ClientServer clientCommunication=null;
-		try {
-			 clientCommunication = (ClientServer) 
-					Naming.lookup("rmi://"+client.getIP()
-							+"/"+client.getName());
-		} catch (MalformedURLException | RemoteException | NotBoundException e) {
-			e.printStackTrace();
-		}
-																		//clientIp and clientName
-		System.out.println("Getting Registry from "+ client.getName()+" for Unsubscribe");
-		
 		
 		ClientServerMessage sendUnSubscribed = new ClientServerMessage(
 				MessageType.UnSubscribeFromServer,
@@ -98,12 +87,24 @@ public class UnSubscribeMessageSender implements Runnable{
 				client.getIP());
 		sendUnSubscribed.setBattlefield(Server.getBattlefield());
 		
+		ClientServer clientCommunication=null;
+		
+		clientCommunication= Server.getClientReg(client);
+	
+	
+	//clientIp and clientName
+	System.out.println("Getting Registry from "+ client.getName()+" for Unsubscribe");
+		
+
+		if(clientCommunication==null)
+			return;
+		
 		try {
 			clientCommunication.onMessageReceived(sendUnSubscribed);
 		} catch (RemoteException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		} catch (NotBoundException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 		
 		

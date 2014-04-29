@@ -70,9 +70,9 @@ public class PingMonitorSender implements Runnable{
 				try {
 					clientCommunication.onMessageReceived(sendServerClientPing);
 				} catch (RemoteException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 				} catch (NotBoundException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 				}
 				
 			}	

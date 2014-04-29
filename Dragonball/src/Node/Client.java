@@ -4,6 +4,7 @@ import game.BattleField;
 import game.BattleFieldViewer;
 
 import interfaces.ClientServer;
+import interfaces.ServerServer;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -146,17 +147,14 @@ public class Client extends Node{
 				
 				//server instance for logging the server for connection
 				Node server = null;
-				try {
-					server = new Server();
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
+				server = new Node();
+
 				 //take the first Server Name from the server list
 				//Node firstServer= (Node) Client.getServerList().keySet().toArray()[0];
 				//server.setName(Client.getServerList().get(firstServer).getName());
 				//server.setIP(Client.getServerList().get(firstServer).getIP());
 				//put names for testing
-				server.setName("Server3");
+				server.setName("Server1");
 				server.setIP("127.0.0.1");
 				
 				System.out.println(server.getIP());
@@ -169,6 +167,7 @@ public class Client extends Node{
 				 //mentions to which server is connected
 				client.setServerConnected(server); 
 
+				Client.printlist();
 				
 				ClientServerMessage subscribeMessage= new ClientServerMessage(
 												MessageType.Subscribe2Server,
@@ -180,7 +179,7 @@ public class Client extends Node{
 				try {
 					serverComm.onMessageReceived(subscribeMessage);
 				} catch (RemoteException | NotBoundException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 				}
 				
 				System.out.println("Client is waiting");
@@ -191,10 +190,13 @@ public class Client extends Node{
 							Thread.sleep(Constants.CLIENT_CHECKING_ISSUBSCRIBED);
 						}
 					
+						Client.printlist();
 						
 						Thread.sleep(Constants.CLIENT_PERIOD_ACTION);
-						
-						ServerInfo serverInfo = Client.getServerList().get(client.serverConnected);
+						System.out.println("Connected serverName:"+ client.getServerConnected().getName());
+						ServerInfo serverInfo = Client.getServerList().get(client.getServerConnected());
+						if(serverInfo ==null)
+							System.err.println("ServerInfo is null");
 							//no response from the connected Server
 							if(System.currentTimeMillis() - serverInfo.getRemoteNodeTimeLastPingSent() > 2* Constants.SERVER2CLIENT_TIMEOUT){
 								client.serverTimeoutTimer.cancel();
@@ -343,7 +345,7 @@ public class Client extends Node{
 	
 	
 	//contact with server
-	public ClientServer getServerReg(Node server)
+	public static ClientServer getServerReg(Node server)
 	{
 		ClientServer serverCommunication = null;
 		try {
@@ -354,14 +356,18 @@ public class Client extends Node{
 			//e.printStackTrace();
 		} catch (RemoteException e) {
 			//e.printStackTrace();
+			System.err.println("Server: "+ server.getName()+" ServerRMI RemoteException error");
+			return null;
 		} catch (NotBoundException e) {
 			//e.printStackTrace();
-		}
-		System.out.println("Getting Registry from  "+server.getName());
-		//TODO: if connection error appears (throws exception), then connect to other server 
-		
+			System.err.println("Server: "+ server.getName()+" ServerRMI NotBoundException error");
+			return null;
+		}		//getServerInfo returns from ServerList
+																//serverIp and serverName
+		System.out.println("getServerReg to "+ server.getName());
 		return serverCommunication;
 	}
+	
 	
 	public int getUniqueIdForName(String fname) throws IOException{
 		//getting a unique id for every server
@@ -642,6 +648,21 @@ public class Client extends Node{
 		battlefield.copyMap(messageBattleField.getMap());
 
 	}
+	
+	public static void printlist()
+	{	System.out.println("Printing server list:");
+		for(ServerInfo serverInfo: Client.getServerList().values()){
+			System.out.println(serverInfo.getName()+"   "+serverInfo.getIP());
+			System.out.println("ID: "+ serverInfo.getServerID()+" Alive:"+ serverInfo.isAlive()+
+									" ProblematicServer:"+ serverInfo.isProblematicServer()+
+									" TimeStamp:"+ serverInfo.getRemoteNodeTimeLastPingSent()+
+									" Total:"+ serverInfo.getTotalNumAnswersAggreement()+
+									" Agree:"+ serverInfo.getNumAnswersAgreeRemovingServer()+
+									" Disagree:"+ serverInfo.getNumAnswersNotAgreeRemovingServer());
+		}
+		System.out.println("Leaving from server list:");
+	}
+	
 	
 	/*----------------------------------------------------
 					GETTERS AND SETTERS

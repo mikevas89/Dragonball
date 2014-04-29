@@ -16,6 +16,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.rmi.AlreadyBoundException;
+import java.rmi.ConnectException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -515,28 +516,7 @@ public class Server extends Node implements java.io.Serializable{
 		}		
 	}
 	
-	
-	public static ClientServer getClientReg(Node client)
-	{
-		ClientServer clientCommunication = null;
-		try {
-			clientCommunication = (ClientServer) 
-			Naming.lookup("rmi://"+client.getIP()+":"+String.valueOf(Constants.SERVER_CLIENT_RMI_PORT)
-					+"/"+client.getName());
-		} catch (MalformedURLException e) {
-			//e.printStackTrace();
-		} catch (RemoteException e) {
-			//e.printStackTrace();
-		} catch (NotBoundException e) {
-			//e.printStackTrace();
-		}		//getClientInfo returns from ClientList
-																//clientIp and clientName
-		System.out.println("Getting Registry from "+ client.getName());
-		return clientCommunication;
-	}
-	
-	
-	
+
 	//refresh the subscription time
 	public void sendServerServerPing() {
 
@@ -568,7 +548,37 @@ public class Server extends Node implements java.io.Serializable{
 		}
 	}
 	
-		
+
+	
+	
+	public static ClientServer getClientReg(Node client)
+	{
+		ClientServer clientCommunication = null;
+		try {
+			clientCommunication = (ClientServer) 
+			Naming.lookup("rmi://"+client.getIP()+":"+String.valueOf(Constants.SERVER_CLIENT_RMI_PORT)
+					+"/"+client.getName());
+		} catch (MalformedURLException e) {
+			//e.printStackTrace();
+		} catch (RemoteException e) {
+			//e.printStackTrace();
+			System.err.println("Server: "+ Server.getMyInfo().getName()+" ServerClientRMI RemoteException error with client: "+ client.getName());
+			return null;
+		} catch (NotBoundException e) {
+			//e.printStackTrace();
+			System.err.println("Server: "+ Server.getMyInfo().getName()+" ServerClientRMI NotBoundException error with client: "+ client.getName());		
+			return null;
+		}catch (Exception e){
+			System.err.println("Server: "+ Server.getMyInfo().getName()+" ServerClientRMI Exception error with client: "+ client.getName());		
+			return null;
+		}
+																//clientIp and clientName
+		System.out.println("Getting Registry from "+ client.getName());
+		return clientCommunication;
+	}
+	
+	
+			
 	public static ServerServer getServerReg(Node server)
 	{
 		ServerServer serverCommunication = null;
@@ -577,7 +587,7 @@ public class Server extends Node implements java.io.Serializable{
 			Naming.lookup("rmi://"+server.getIP()+":"+String.valueOf(Constants.SERVER_SERVER_RMI_PORT)
 					+"/"+server.getName());
 		} catch (MalformedURLException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		} catch (RemoteException e) {
 			//e.printStackTrace();
 			System.err.println("Server: "+ myInfo.getName()+" ServerRMI RemoteException error with server: "+ server.getName());

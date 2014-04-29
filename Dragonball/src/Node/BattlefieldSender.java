@@ -27,7 +27,7 @@ public class BattlefieldSender implements Runnable, java.io.Serializable {
 	public void run() {
 		
 		//broadcasts the new battlefield to ALL clients
-		while(true){
+		while(!Server.killServer){
 			try {
 				Thread.sleep(Constants.BROADCAST_PERIOD_TO_CLIENTS);
 			} catch (InterruptedException e) {
@@ -36,7 +36,8 @@ public class BattlefieldSender implements Runnable, java.io.Serializable {
 			//send to EACH client
 			for(Node client : Server.getClientList().keySet()){
 				//get client's RMI instance
-				ClientServer clientComm = this.getClientReg(client); 
+				ClientServer clientComm = null;
+				clientComm = Server.getClientReg(client); 
 				//create Message
 				ClientServerMessage sendBattlefieldMessage = new ClientServerMessage(
 							MessageType.GetBattlefield,
@@ -46,32 +47,27 @@ public class BattlefieldSender implements Runnable, java.io.Serializable {
 							client.getIP());
 				sendBattlefieldMessage.setBattlefield(Server.getBattlefield());
 				
-				System.out.println("Server: Battlefield sent");
+				if(clientComm==null){
+					System.out.println("clientComm is null");
+					continue;
+				}
 				
+				System.out.println("Server: Battlefield sent");
+
 				try {
 					clientComm.onMessageReceived(sendBattlefieldMessage);
-				} catch (RemoteException | NotBoundException e) {
-					e.printStackTrace();
+				} catch (RemoteException e) {
+					//e.printStackTrace();
+				} catch (NotBoundException e) {
+					//e.printStackTrace();
 				}
+
 
 			}
 			
 		}
 	}
 	
-	public ClientServer getClientReg(Node client)
-	{
-		ClientServer clientCommunication = null;
-		try {
-			clientCommunication = (ClientServer) 
-			Naming.lookup("rmi://"+client.getIP()
-					+"/"+client.getName());
-		} catch (MalformedURLException | RemoteException | NotBoundException e) {
-			e.printStackTrace();
-		}
-		System.out.println("Getting Registry from "+ client.getName());
-		return clientCommunication;
-	}
 
 	public Server getServerOwner() {
 		return serverOwner;
