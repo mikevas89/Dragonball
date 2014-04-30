@@ -9,6 +9,8 @@ public class Constants {
 	public static final int NODES_PER_IP=3;
 	public static final int NUM_NODES=NUM_IPS*NODES_PER_IP;
 	
+	public static final int MAX_CLIENTS_PER_SERVER=5;
+	
 	public static final int SERVER_CLIENT_RMI_PORT=1099;
 	public static final int SERVER_SERVER_RMI_PORT=1100;
 	
@@ -28,6 +30,8 @@ public class Constants {
 	public static final long SERVER2SERVER_PING_PERIOD=5000;
 	public static final long SERVER2CLIENT_TIMEOUT = 2* CLIENT2SERVER_PING_PERIOD;
 	public static final long SERVER2SERVER_TIMEOUT = 20000;
+	
+	public static final long SERVER_CHECKPOINT_PERIOD = 3000;
 	
 	//Server PingMonitor , it is calculated according to the smallest Timeout PingMonitor checks for Pings -> SERVER2SERVER_TIMEOUT
 	public static final long PING_MONITOR_CHECKING_PERIOD =  SERVER2SERVER_PING_PERIOD / 3; 

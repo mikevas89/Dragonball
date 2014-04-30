@@ -63,12 +63,7 @@ public class ClientRMI extends UnicastRemoteObject implements ClientServer {
 					clientOwner.onUnSubscribeFromServerMessageReceived(csMessage);
 					break;
 				case RedirectConnection:
-					try {
-						clientOwner.onRedirectServerMessageReceived(csMessage);
-					} catch (MalformedURLException | RemoteException
-							| NotBoundException e) {
-						e.printStackTrace();
-					}
+					clientOwner.onRedirectServerMessageReceived(csMessage);
 					break;
 				default:
 					break;

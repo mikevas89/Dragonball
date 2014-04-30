@@ -152,9 +152,9 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 				try {
 					serverComm.onMessageReceived(requestBattleFieldMessage);
 				} catch (RemoteException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 				} catch (NotBoundException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 				}
 				
 				System.out.println("Server is going to sleep for Server2ServerTimeout");
@@ -167,6 +167,50 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 				if(Server.getMyInfo().isRunsGame()) break;
 			}
 
+		}
+		else{
+			if(Server.getMyInfo().getNumClients() >=Constants.MAX_CLIENTS_PER_SERVER){
+				Node serverToConnect = null;
+				ServerInfo serverInfoMinClients = new ServerInfo("","",-1,true);
+				serverInfoMinClients.setNumClients(Constants.MAX_CLIENTS_PER_SERVER);
+				for(ServerInfo serverInfo: Server.getServerList().values()){
+					if(serverInfo.isRunsGame() && serverInfo.getNumClients() < serverInfoMinClients.getNumClients()){
+						serverInfoMinClients = serverInfo;
+						serverToConnect = new Node(serverInfoMinClients.getName(),serverInfoMinClients.getIP());
+					}
+				}
+				//only one server and full of clientss
+				if(serverToConnect==null)
+					return;
+				
+				//server will send a redirection message to client
+				
+				//With this message, Server sends the Redirection to the client
+				 ClientServerMessage sendRedirection = new ClientServerMessage(
+														MessageType.RedirectConnection,
+														Server.getMyInfo().getName(),
+														Server.getMyInfo().getIP(),
+														client.getName(),
+														client.getIP());
+				 
+				 sendRedirection.setContent("Name",serverToConnect.getName());
+				 sendRedirection.setContent("IP",serverToConnect.getIP());
+				 //sending the ACK message to subscribed client
+				 ClientServer clientRMI=null;
+				 clientRMI = Server.getClientReg(client);
+				 
+				 if(clientRMI==null) 
+					 return;
+				
+				try {
+					clientRMI.onMessageReceived(sendRedirection);
+				} catch (RemoteException | NotBoundException e) {
+					//e.printStackTrace();
+				}
+				
+				System.out.println("Server: Redirection sent to Client"+ client.getName()+ " to Server "+ serverToConnect.getName());	
+				return;
+			}	
 		}
 		
 		if(!Server.getMyInfo().isRunsGame()){
@@ -210,7 +254,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		try {
 			clientRMI.onMessageReceived(sendSubscribed);
 		} catch (RemoteException | NotBoundException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 		
 		System.out.println("Server: ACK sent to Client"+ client.getName()+ "unitID: "+ newClient.getUnitID());

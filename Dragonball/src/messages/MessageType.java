@@ -17,8 +17,9 @@ public enum MessageType {
 	PendingMoveInvalid,
 	ProblematicServer,
 	ResponseProblematicServer,
+	NewCheckPoint,
 	
-	SendValidAction,
+	NewValidAction,
 	//GetBattlefield
 	RequestBattlefield
 }

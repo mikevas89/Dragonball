@@ -11,6 +11,7 @@ import Node.Node;
 		private boolean Alive; //server is able to operate
 		private int numClients; //number of clients for the server
 		private boolean runsGame; //server is running the game (only if clients are connected)
+		private boolean runsDragons; //server runs the Dragons
 		
 		private boolean problematicServer; //server finds out that this server does not respond
 		private Node nodeFoundTheProblematicServer; //keeps track of the node that started the agreement procedures
@@ -26,6 +27,7 @@ import Node.Node;
 			this.Alive=alive;
 			this.setNumClients(0);
 			this.setRunsGame(false);
+			this.setRunsDragons(false);
 			this.setCurrentNodeTimeLastPingSent(0);
 			this.setRemoteNodeTimeLastPingSent(0);
 			this.setProblematicServer(false);
@@ -120,6 +122,14 @@ import Node.Node;
 		public void setNodeFoundTheProblematicServer(
 				Node nodeFoundTheProblematicServer) {
 			this.nodeFoundTheProblematicServer = nodeFoundTheProblematicServer;
+		}
+
+		public boolean isRunsDragons() {
+			return runsDragons;
+		}
+
+		public void setRunsDragons(boolean runsDragons) {
+			this.runsDragons = runsDragons;
 		}
 	}
 	

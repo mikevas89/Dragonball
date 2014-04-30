@@ -162,7 +162,7 @@ public class Client extends Node{
 				
 				//setup connection to server registry
 				ClientServer serverComm;
-				serverComm = client.getServerReg(server);
+				serverComm = Client.getServerReg(server);
 
 				 //mentions to which server is connected
 				client.setServerConnected(server); 
@@ -612,18 +612,30 @@ public class Client extends Node{
 		
 	}
 	
-	public void onRedirectServerMessageReceived(ClientServerMessage message) throws MalformedURLException, 
-																			RemoteException, NotBoundException{
-		//TODO: checks a server list if the sender is on that list ?
-		//server info are from the list of the client
-		if(!this.isSubscribed){
-			//get the serverInfo from the message 
-			//TODO: retrieve info from the server list, NOT from message
-			this.serverConnected.setName(message.getSender());
+	public void onRedirectServerMessageReceived(ClientServerMessage message){
+		if(message.getSender().equals(this.serverConnected.getName())){
+			this.serverConnected.setName(message.getContent().get("Name"));
 			this.serverConnected.setIP(message.getContent().get("IP"));
-			//send subscribe message
-			subscribeServer(this.serverConnected);
+			
+			//setup connection to server registry
+			ClientServer serverComm;
+			serverComm = Client.getServerReg(this.serverConnected);
+
+			ClientServerMessage subscribeMessage= new ClientServerMessage(
+											MessageType.Subscribe2Server,
+											this.getName(),
+											this.getIP(),
+											serverConnected.getName(),
+											serverConnected.getIP());
+			if(serverComm == null)
+					return;
+			try {
+				serverComm.onMessageReceived(subscribeMessage);
+			} catch (RemoteException | NotBoundException e) {
+				//e.printStackTrace();
+			}
 		}
+		
 	}
 	
 	

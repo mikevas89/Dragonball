@@ -14,8 +14,11 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.sun.org.apache.bcel.internal.generic.NEWARRAY;
 
 
 
@@ -34,6 +37,7 @@ import units.Unit;
 import messages.Message;
 import messages.MessageType;
 import messages.ServerServerMessage;
+import Node.CheckPointMessageSender;
 import Node.Node;
 import Node.PingMonitorSender;
 import Node.Server;
@@ -75,8 +79,11 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		case PendingMoveInvalid:
 			onPendingMoveInvalidMessageReceived(serverServerMessage);
 			break;
-		case SendValidAction://TODO
+		case NewValidAction:
 			onSendValidActionMessageReceived(serverServerMessage);
+			break;
+		case NewCheckPoint:
+			onNewCheckPointMessageReceived(serverServerMessage);
 			break;
 		case ProblematicServer:
 			onProblematicServerMessageReceived(serverServerMessage);	
@@ -144,9 +151,9 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		try {
 			serverComm.onMessageReceived(sendBattleFieldMessage);
 		} catch (RemoteException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		} catch (NotBoundException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		}	
 		
 	}
@@ -218,10 +225,95 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 	}
 
 	private void onSendValidActionMessageReceived(ServerServerMessage message) {
-		//TODO
-		//TODO
 		System.out.println("SS4 "+System.currentTimeMillis()+" MESSAGE" );
+		LogInfo newRemoteAction = message.getActionToBeChecked();
+		
+		//Removed Action was received
+		if(newRemoteAction.getAction().equals(Action.Removed)){
+			ListIterator<Unit> it =Server.getBattlefield().getUnits().listIterator();
+	 		while(it.hasNext()){ 
+				Unit unit = it.next();
+				if(unit.getUnitID() == newRemoteAction.getSenderUnitID()){
+					Server.getBattlefield().removeUnit(unit.getX(), unit.getY(), it);
+					Server.getValidActions().add(newRemoteAction);
+					return;
+				}
+			}
+		}
+		
+		 //after this, the action is valid and it WILL BE played (targetUnitID may also be -1)
+		Unit existingTargetUnit=Server.getBattlefield().getUnit(newRemoteAction.getTargetX(), newRemoteAction.getTargetY());
+	    int existingTargetUnitID;
+	    if(existingTargetUnit==null)
+	    	existingTargetUnitID=-1;
+	    else
+	    	existingTargetUnitID=existingTargetUnit.getUnitID();
+	    
+	    if(Server.getBattlefield().
+	    		getUnit(newRemoteAction.getSenderX(), newRemoteAction.getSenderY()).getUnitID()!=newRemoteAction.getSenderUnitID() ||
+	    		existingTargetUnitID!=newRemoteAction.getTargetUnitID()){
+				    	System.err.println("onSendValidAction found an inconsistency from the Remote Action");
+						//clear the pending/validBlockQueue
+						Server.getPendingActions().clear();
+						Server.getValidBlockQueue().clear();
+						//copy checkpoint state to running battlefield
+						Server.getBattlefield().copyMap(Server.getCheckPoint().getMap());
+						Server.getBattlefield().copyListUnits(Server.getCheckPoint().getUnits());
+						Server.copyValidActions(Server.getCheckPoint().getCheckPointValidActions());
+						//broadcast the checkpoint battlefield to all
+						Runnable checkPointMessage = new CheckPointMessageSender();
+						new Thread(checkPointMessage).start();
+						return;
+	    }
+	    
+	    if(newRemoteAction.getSenderType().equals(UnitType.dragon)){
+	    	Unit dragonUnit = Server.getBattlefield().getUnit(newRemoteAction.getSenderX(),newRemoteAction.getSenderY());
+	    	Unit targetUnit = Server.getBattlefield().getUnit(newRemoteAction.getTargetX(),newRemoteAction.getTargetY());
+	    	Server.getBattlefield().dealDamage(targetUnit.getX(), targetUnit.getY(), dragonUnit.getAttackPoints());
+	    	
+	    	Server.getValidActions().add(newRemoteAction);
+	    }
+	    else {//senderType is Player
+	    	Unit senderUnit = Server.getBattlefield().getUnit(newRemoteAction.getSenderX(), newRemoteAction.getSenderY());
+	    	
+	    	switch (newRemoteAction.getTargetType()) {
+			case undefined:
+				// There is no unit in the square. Move the player to this
+				// square
+				Server.getBattlefield().moveUnit(senderUnit,
+						newRemoteAction.getTargetX(), newRemoteAction.getTargetY());
+				break;
+			case player:
+				// There is a player in the square, attempt a healing
+				Server.getBattlefield().healDamage(newRemoteAction.getTargetX(),
+						newRemoteAction.getTargetY(),
+						senderUnit.getAttackPoints());
+				break;
+			case dragon:
+				// There is a dragon in the square, attempt a dragon slaying
+				Server.getBattlefield().dealDamage(newRemoteAction.getTargetX(),
+						newRemoteAction.getTargetY(),
+						senderUnit.getAttackPoints());
+				break;
+			}
+			// logs the new Valid Action
+			Server.getValidActions().add(newRemoteAction);
+	    }
+
 	}
+	
+
+	private void onNewCheckPointMessageReceived(ServerServerMessage message) {
+		System.out.println("onNewCheckPointMessageReceived");
+		Server.getPendingActions().clear();
+		Server.getValidBlockQueue().clear();
+		//update battlefield and validActions due to an inconsistency to another Server
+		Server.getBattlefield().copyBattleField(message.getBattlefield());
+		Server.copyValidActions(message.getValidActionsLog());
+		//update server's checkpoint to the received one
+		Server.getCheckPoint().captureCheckPoint(message.getBattlefield(), message.getValidActionsLog());		
+	}
+
 
 
 	private void onProblematicServerMessageReceived(ServerServerMessage message) {
@@ -370,6 +462,10 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 			return; // client is not player in my database
 		if(!serverInfo.isAlive())
 			return;
+		//update server's info
+		serverInfo.setNumClients(message.getNumClients());
+		serverInfo.setRunsGame(message.isSenderRunsGame());
+		serverInfo.setRunsDragons(message.isSenderRunsDragons());
 		serverInfo.setRemoteNodeTimeLastPingSent(System.currentTimeMillis());
 		Server.getServerList().replace(server, serverInfo);
 	}

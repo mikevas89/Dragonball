@@ -26,21 +26,14 @@ import units.Unit;
 public class DragonMaster implements Runnable {
 
 	private BattleField battlefield;
-	private Server serverOwner;
 	private int dragonCount;
-	private volatile boolean runDragons; // server that moves the dragons
-	private volatile boolean createDragons; // server creates dragons
 
-	public DragonMaster(Server serverOwner, BattleField battlefield,
-			int dragonCount, boolean runDragons, boolean createDragons) {
-		this.setServerOwner(serverOwner);
+	public DragonMaster(BattleField battlefield,int dragonCount) {
 		this.battlefield = battlefield;
 		this.dragonCount = dragonCount;
-		this.setRunDragons(runDragons);
-		this.setCreateDragons(createDragons);
 
-		if (this.createDragons) {
-			for (int i = 0; i < dragonCount; i++) {
+		if (Server.isStartDragons()) {
+			for (int i = 0; i < this.dragonCount; i++) {
 				int x, y, attempt = 0;
 				do {
 					x = (int) (Math.random() * BattleField.MAP_WIDTH);
@@ -63,7 +56,7 @@ public class DragonMaster implements Runnable {
 	@Override
 	public void run() {
 
-		while (!runDragons) {
+		while (!Server.isRunDragons()) {
 			// sleep if other server sends the moves of Dragons
 			try {
 				Thread.sleep(Constants.SERVER2SERVER_TIMEOUT);
@@ -71,13 +64,15 @@ public class DragonMaster implements Runnable {
 				e.printStackTrace();
 			}
 		}
+		//update info for the Ping Messages
+		Server.getMyInfo().setRunsDragons(true);
 
 		// this server makes the moves
 		int turn = 0;
-		while (runDragons) {
+		while (Server.isRunDragons()) {
 			// turn++;
 			if (turn == 5) {
-				runDragons = false;
+				Server.setRunDragons(false);
 				break;
 			}
 
@@ -163,7 +158,7 @@ public class DragonMaster implements Runnable {
 								.getName());
 				// put action to Queue
 				try {
-					this.serverOwner.getValidBlockQueue().put(actionDragon);
+					Server.getValidBlockQueue().put(actionDragon);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -171,38 +166,8 @@ public class DragonMaster implements Runnable {
 			}
 		}
 
-		/*
-		 * if(!this.runDragons){ ListIterator<Unit> it =
-		 * this.battlefield.getUnits().listIterator(); while(it.hasNext()){ Unit
-		 * unit= it.next(); if (unit instanceof Player) continue;
-		 * this.battlefield.removeUnit(unit.getX(), unit.getY(), it); }
-		 */
 	}
 
-	// TODO:stopGame();
 
-	public boolean isRunDragons() {
-		return runDragons;
-	}
-
-	public void setRunDragons(boolean runDragons) {
-		this.runDragons = runDragons;
-	}
-
-	public boolean isCreateDragons() {
-		return createDragons;
-	}
-
-	public void setCreateDragons(boolean createDragons) {
-		this.createDragons = createDragons;
-	}
-
-	public Server getServerOwner() {
-		return serverOwner;
-	}
-
-	public void setServerOwner(Server serverOwner) {
-		this.serverOwner = serverOwner;
-	}
 
 }

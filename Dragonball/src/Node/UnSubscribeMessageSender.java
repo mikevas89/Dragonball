@@ -107,6 +107,21 @@ public class UnSubscribeMessageSender implements Runnable{
 			//e.printStackTrace();
 		}
 		
+		//TODO check if that client was the last one
+		Server.getMyInfo().setNumClients(Server.getMyInfo().getNumClients()-1);
+		if(Server.getMyInfo().getNumClients()>0)
+			return;
+		
+		//if clients of the server are equal to zero
+		if(!Server.getMyInfo().isRunsDragons()){
+			Server.getMyInfo().setRunsGame(false);
+			Server.getPendingActions().clear();
+			Server.getValidBlockQueue().clear();
+		}
+		else{ //server runs dragons and so still plays the game
+			Server.getPendingActions().clear();
+		}
+		
 		
 	}
 

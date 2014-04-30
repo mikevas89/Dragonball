@@ -38,6 +38,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import messages.MessageType;
 import messages.ServerServerMessage;
 
+import structInfo.CheckPoint;
 import structInfo.ClientPlayerInfo;
 import structInfo.Constants;
 import structInfo.LogInfo;
@@ -69,6 +70,9 @@ public class Server extends Node implements java.io.Serializable{
 	private static Map<String, LogInfo> PendingActions; //pending moves
 	private static ArrayList<LogInfo> ValidActions; //log of the valid actions
 	private static BlockingQueue<LogInfo> validBlockQueue;//intermediate between valid and pending
+	private static CheckPoint checkPoint;
+	private volatile static boolean startDragons;
+	private volatile static boolean runDragons;
 	
 	public volatile static boolean killServer = false;
 	
@@ -88,6 +92,7 @@ public class Server extends Node implements java.io.Serializable{
 		PendingActions= Collections.synchronizedMap(new HashMap<String, LogInfo>());   // list of pending action
 		ValidActions= new ArrayList<LogInfo>();   // list of valid actions
 		validBlockQueue = new LinkedBlockingQueue<>();
+		checkPoint = new CheckPoint(25,25);
 		int numServer= this.getUniqueIdForName("ServerID.txt");
 		
 		//unique name of Client
@@ -164,19 +169,19 @@ public class Server extends Node implements java.io.Serializable{
 				}
 
 				
-				boolean startDragons,runDragons;
-				
 				if (server.startGame()) {
 					// create Game
 					//battlefield = BattleField.getBattleField();
 					//create Dragons
-					runDragons=true;
-					startDragons=true;
+					Server.setRunDragons(true);
+					Server.setStartDragons(true);
+					Server.getMyInfo().setRunsDragons(true);
 					Server.getMyInfo().setRunsGame(true);
 				}
 				else{
-					runDragons=false;
-					startDragons=false;
+					Server.setRunDragons(false);
+					Server.setStartDragons(false);
+					Server.getMyInfo().setRunsDragons(false);
 				}
 				battlefield = BattleField.getBattleField();
 
@@ -186,7 +191,7 @@ public class Server extends Node implements java.io.Serializable{
 				DragonMaster creation (which creates all dragons)
 				----------------------------------------------------		
 				 */
-				Runnable dragonmaster = new DragonMaster(server,battlefield,DRAGON_COUNT,runDragons,startDragons);
+				Runnable dragonmaster = new DragonMaster(battlefield,DRAGON_COUNT);
 				new Thread(dragonmaster).start();
 				
 
@@ -194,14 +199,14 @@ public class Server extends Node implements java.io.Serializable{
 						Create thread for monitoring the pending action list
 				----------------------------------------------------		
 				*/
-				Runnable pendingMonitor = new PendingMonitor(Server.getPendingActions(),server.getValidBlockQueue());
+				Runnable pendingMonitor = new PendingMonitor(Server.getPendingActions(),Server.getValidBlockQueue());
 				new Thread(pendingMonitor).start();
 				
 				/*----------------------------------------------------
 						Create thread for validating the pending action list
 				----------------------------------------------------		
 				*/
-				Runnable validMonitor = new ValidMonitor(Server.getPendingActions(),Server.getValidActions(),server.getValidBlockQueue());
+				Runnable validMonitor = new ValidMonitor(Server.getPendingActions(),Server.getValidActions(),Server.getValidBlockQueue());
 				new Thread(validMonitor).start();
 				
 				/*----------------------------------------------------
@@ -226,10 +231,11 @@ public class Server extends Node implements java.io.Serializable{
 				*/
 				while(!Server.killServer)
 				{
-					System.out.println("Server is running...");
 					Server.printlist();
+					System.out.println("Server is getting a Checkpoint of the BattleField...");
+					Server.getCheckPoint().captureCheckPoint(Server.getBattlefield(), Server.getValidActions());
 					try {
-						Thread.sleep(10000);
+						Thread.sleep(Constants.SERVER_CHECKPOINT_PERIOD);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -528,6 +534,8 @@ public class Server extends Node implements java.io.Serializable{
 					serverInfo.getName(), serverInfo.getIP());
 
 			pingMessage.setNumClients(myInfo.getNumClients());
+			pingMessage.setSenderRunsGame(Server.getMyInfo().isRunsGame());
+			pingMessage.setSenderRunsDragons(Server.getMyInfo().isRunsDragons());
 			// send the subscription message to the server
 			ServerServer serverComm = null;
 			serverComm = Server.getServerReg(new Node(serverInfo.getName(),
@@ -602,6 +610,8 @@ public class Server extends Node implements java.io.Serializable{
 		return serverCommunication;
 	}
 	
+	
+	
 	public void DecideForRemoval(Node problematicServer){
 		System.err.println(Server.getMyInfo().getName()+ " Ready to Decide");
 		ServerInfo serverInfo = Server.getServerList().get(problematicServer);
@@ -632,7 +642,7 @@ public class Server extends Node implements java.io.Serializable{
 				ServerInfo serverInfoForRemovedServer = Server.getServerList().get(serverToRemove);
 				// remove players of the server
 				for (Unit unit : Server.getBattlefield().getUnits()) {
-					if (unit.getServerOwnerID() == serverInfoForRemovedServer.getServerID()) {
+					if (unit instanceof Player && unit.getServerOwnerID() == serverInfoForRemovedServer.getServerID()) {
 						LogInfo playerDown = new LogInfo(Action.Removed,
 								unit.getUnitID(), unit.getX(), unit.getY(),
 								unit.getType(unit.getX(), unit.getY()),
@@ -645,6 +655,13 @@ public class Server extends Node implements java.io.Serializable{
 							e.printStackTrace();
 						}
 					}
+				}
+				
+				//current Server decides if he is going to handle Dragons (in case the removed server was the handler)
+				if(serverInfoForRemovedServer.isRunsDragons() && 
+						serverInfoForRemovedServer.getServerID() == Server.getMyInfo().getServerID()-1){
+					Server.setRunDragons(true);
+					Server.getMyInfo().setRunsDragons(true);
 				}
 
 				Server.getServerList().replace(serverToRemove,new ServerInfo(serverInfoForRemovedServer
@@ -746,19 +763,26 @@ public class Server extends Node implements java.io.Serializable{
 	public static ArrayList<LogInfo> getValidActions() {
 		return ValidActions;
 	}
+	
+	public static void copyValidActions(ArrayList<LogInfo> actions){
+		Server.ValidActions = new ArrayList<LogInfo>(actions);
+	}
+
+	public static CheckPoint getCheckPoint() {
+		return checkPoint;
+	}
+
+	public static void setCheckPoint(CheckPoint checkPoint) {
+		Server.checkPoint = checkPoint;
+	}
 
 	public static BlockingQueue<LogInfo> getValidBlockQueue() {
 		return validBlockQueue;
 	}
 
-
-
-
 	public Timer getServerServerTimeoutTimer() {
 		return serverServerTimeoutTimer;
 	}
-
-
 
 
 	public void setServerServerTimeoutTimer(Timer serverServerTimeoutTimer) {
@@ -791,6 +815,34 @@ public class Server extends Node implements java.io.Serializable{
 
 	public static void setMyInfo(ServerInfo myInfo) {
 		Server.myInfo = myInfo;
+	}
+
+
+
+
+	public static boolean isStartDragons() {
+		return startDragons;
+	}
+
+
+
+
+	public static void setStartDragons(boolean startDragons) {
+		Server.startDragons = startDragons;
+	}
+
+
+
+
+	public static boolean isRunDragons() {
+		return runDragons;
+	}
+
+
+
+
+	public static void setRunDragons(boolean runDragons) {
+		Server.runDragons = runDragons;
 	}
 
 

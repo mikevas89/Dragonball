@@ -4,6 +4,7 @@ import game.BattleField;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 
 import Node.Node;
 
@@ -19,12 +20,15 @@ public class ServerServerMessage extends Message implements Serializable{
 	private LogInfo actionToBeChecked;
 	private int numClients;
 	private boolean senderRunsGame;
+	private boolean senderRunsDragons;
 	private Node problematicServerToCheck;
+	private ArrayList<LogInfo> validActionsLog;
 	
 	
 	public ServerServerMessage(){
 		super();
 		this.battlefield=BattleField.getBattleField();
+		this.validActionsLog = new ArrayList<LogInfo>();
 	}
 	
 	public ServerServerMessage(MessageType messageRequest, String sender,
@@ -32,6 +36,7 @@ public class ServerServerMessage extends Message implements Serializable{
 		
 		super(messageRequest, sender, senderIP, receiver, receiverIP);
 		this.battlefield=BattleField.getBattleField();
+		this.validActionsLog = new ArrayList<LogInfo>();
 	}
 	
 	
@@ -75,6 +80,22 @@ public class ServerServerMessage extends Message implements Serializable{
 
 	public void setProblematicServerToCheck(Node problematicServerToCheck) {
 		this.problematicServerToCheck = problematicServerToCheck;
+	}
+
+	public boolean isSenderRunsDragons() {
+		return senderRunsDragons;
+	}
+
+	public void setSenderRunsDragons(boolean senderRunsDragons) {
+		this.senderRunsDragons = senderRunsDragons;
+	}
+
+	public ArrayList<LogInfo> getValidActionsLog() {
+		return validActionsLog;
+	}
+
+	public void setValidActionsLog(ArrayList<LogInfo> ActionsLog) {
+		this.validActionsLog = new ArrayList<LogInfo>(ActionsLog);
 	}
 
 

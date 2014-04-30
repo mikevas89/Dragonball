@@ -30,7 +30,7 @@ public class ValidActionSender implements Runnable {
 			if(!serverInfo.isRunsGame()) continue;
 			
 			 ServerServerMessage sendValidAction = new ServerServerMessage(
-									MessageType.SendValidAction,
+									MessageType.NewValidAction,
 									Server.getMyInfo().getName(),
 									Server.getMyInfo().getIP(),
 									serverInfo.getName(),
@@ -46,7 +46,7 @@ public class ValidActionSender implements Runnable {
 			 try {
 				 serverRMI.onMessageReceived(sendValidAction);
 			 } catch (RemoteException | NotBoundException e) {
-				e.printStackTrace();
+				//se.printStackTrace();
 			 }
 			
 			 System.out.println("Server: sendValidAction sent to Server"+ serverInfo.getName()+ "serverIP: "+ serverInfo.getIP());
