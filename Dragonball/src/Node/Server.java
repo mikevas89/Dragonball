@@ -100,7 +100,7 @@ public class Server extends Node implements java.io.Serializable{
 		
 		//unique name of Client
 		this.setName("Server"+ String.valueOf(numServer));
-		this.setIP("127.0.0.1");
+		//this.setIP("127.0.0.1");
 		
 		
 		//set timers, sets a timer for sending the Ping to other Alive Servers
@@ -165,7 +165,7 @@ public class Server extends Node implements java.io.Serializable{
 				//server.printlist();
 				
 				//create my Info 
-				myInfo = new ServerInfo(server.getName(),server.getIP(),Server.getMyServerID(),true);
+				//myInfo = new ServerInfo(server.getName(),server.getIP(),Server.getMyServerID(),true);
 				if(Server.getClientList().size()>0){
 					myInfo.setNumClients(Server.getClientList().size());
 					myInfo.setRunsGame(true);
@@ -492,8 +492,10 @@ public class Server extends Node implements java.io.Serializable{
 		    	String[] parts = text.split(" ");
 		    	if(!this.getName().equals(parts[0]))
 		    			Server.putToServerList(new ServerInfo(parts[0], parts[1], ++j,false));
-		    	else
-		    		Server.setMyServerID(++j);
+		    	else{
+		    		///Server.setMyServerID(++j);
+		    		Server.myInfo=new ServerInfo(parts[0],parts[1],++j,true);
+		    	}
 		    }
 		    
 		} catch (FileNotFoundException e) {
