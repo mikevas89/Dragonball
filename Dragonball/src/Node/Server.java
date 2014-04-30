@@ -43,6 +43,7 @@ import structInfo.Constants;
 import structInfo.LogInfo;
 import structInfo.ServerInfo;
 import structInfo.LogInfo.Action;
+import units.Dragon;
 import units.Player;
 import units.Unit;
 import Node.Node;
@@ -643,8 +644,13 @@ public class Server extends Node implements java.io.Serializable{
 				// remove the current info for the serverList decided to remove
 				ServerInfo serverInfoForRemovedServer = Server.getServerList().get(serverToRemove);
 				// remove players of the server
-				for (Unit unit : Server.getBattlefield().getUnits()) {
-					if (unit instanceof Player && unit.getServerOwnerID() == serverInfoForRemovedServer.getServerID()) {
+				synchronized (Server.lock) {
+					Iterator<Unit> it = Server.getBattlefield().getUnits()
+							.listIterator();
+					while (it.hasNext()) {
+						Unit unit = it.next();
+						if(unit instanceof Dragon) continue;
+					if (unit.getServerOwnerID() == serverInfoForRemovedServer.getServerID()) {
 						LogInfo playerDown = new LogInfo(Action.Removed,
 								unit.getUnitID(), unit.getX(), unit.getY(),
 								unit.getType(unit.getX(), unit.getY()),
@@ -657,6 +663,7 @@ public class Server extends Node implements java.io.Serializable{
 							e.printStackTrace();
 						}
 					}
+				  }
 				}
 				
 				//current Server decides if he is going to handle Dragons (in case the removed server was the handler)

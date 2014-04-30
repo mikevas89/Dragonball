@@ -12,6 +12,7 @@ import java.util.ListIterator;
 import structInfo.LogInfo;
 import structInfo.ServerInfo;
 import structInfo.LogInfo.Action;
+import units.Dragon;
 import units.Unit;
 
 
@@ -126,8 +127,8 @@ public class PingMonitorSender implements Runnable{
 							.listIterator();
 					while (it.hasNext()) {
 						Unit unit = it.next();
-						if (unit.getServerOwnerID() == serverInfoForRemovedServer
-								.getServerID()) {
+						if(unit instanceof Dragon) continue;
+						if (unit.getServerOwnerID() == serverInfoForRemovedServer.getServerID()) {
 							LogInfo playerDown = new LogInfo(Action.Removed,
 									unit.getUnitID(), unit.getX(), unit.getY(),
 									unit.getType(unit.getX(), unit.getY()),
