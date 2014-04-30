@@ -11,8 +11,8 @@ public class Constants {
 	
 	public static final int MAX_CLIENTS_PER_SERVER=5;
 	
-	public static final int SERVER_CLIENT_RMI_PORT=1099;
-	public static final int SERVER_SERVER_RMI_PORT=1100;
+	public static final int SERVER_CLIENT_RMI_PORT=1100;
+	public static final int SERVER_SERVER_RMI_PORT=1099;
 	
 	
 	//action periods for the players

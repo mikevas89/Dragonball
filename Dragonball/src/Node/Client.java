@@ -464,9 +464,9 @@ public class Client extends Node{
 		try {
 			serverComm.onMessageReceived(pingMessage);
 		} catch (RemoteException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		} catch (NotBoundException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 	}
 	

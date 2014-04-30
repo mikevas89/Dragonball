@@ -2,6 +2,7 @@ package Node;
 
 import game.BattleField;
 
+
 import game.BattleFieldViewer;
 
 import interfaces.ClientServer;
@@ -16,7 +17,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.rmi.AlreadyBoundException;
-import java.rmi.ConnectException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -24,7 +24,6 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -424,7 +423,7 @@ public class Server extends Node implements java.io.Serializable{
 		}
 		//timeout reached
 		//System.out.println("startGame : PrintList");
-		//this.printlist();
+		this.printlist();
 		
 		for (ServerInfo serverInfo : Server.getServerList().values()) {
 			if(serverInfo.isAlive())

@@ -143,6 +143,13 @@ public class PingMonitorSender implements Runnable{
 						}
 					}
 				}
+				
+				//current Server decides if he is going to handle Dragons (in case the removed server was the handler)
+				if(serverInfoForRemovedServer.isRunsDragons() && 
+						serverInfoForRemovedServer.getServerID() == Server.getMyInfo().getServerID()-1){
+					Server.setRunDragons(true);
+					Server.getMyInfo().setRunsDragons(true);
+				}
 
 				Server.getServerList().replace(this.getReferencedNode(),
 								new ServerInfo(serverInfoForRemovedServer
