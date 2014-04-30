@@ -18,6 +18,7 @@ public enum MessageType {
 	ProblematicServer,
 	ResponseProblematicServer,
 	NewCheckPoint,
+	NewPlayer,
 	
 	NewValidAction,
 	//GetBattlefield

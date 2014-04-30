@@ -15,21 +15,31 @@ public class Constants {
 	public static final int SERVER_SERVER_RMI_PORT=1100;
 	
 	
-	public static final long CLIENT_CHECKING_ISSUBSCRIBED = 500;
-	public static final long CLIENT_PERIOD_ACTION= 3000;//make it 5000
-	
+	//action periods for the players
+	public static final long PLAYER_PERIOD_ACTION= 12000;
 	//Server BattleFieldSender
-	public static final long BROADCAST_PERIOD_TO_CLIENTS = CLIENT_PERIOD_ACTION/2;
+	public static final long BROADCAST_BATTLEFIELD_PERIOD_TO_CLIENTS = PLAYER_PERIOD_ACTION/2;
+	
 	
 	//Server PendingMonitor
-	public static final long PENDING_TIMEOUT=1000;
-	public static final long CHECK_PENDING_LIST_PERIOD=1000;
+	public static final long PENDING_TIMEOUT=BROADCAST_BATTLEFIELD_PERIOD_TO_CLIENTS /2;
+	public static final long CHECK_PENDING_LIST_PERIOD=PENDING_TIMEOUT / 5;
+	
+	//client subscription
+	public static final long CLIENT_CHECKING_ISSUBSCRIBED = 500;
+	//action periods for the dragons
+	public static final long DRAGON_PERIOD_ACTION= PLAYER_PERIOD_ACTION + PENDING_TIMEOUT;
+	
+
+	
+	
+
 	
 	//Server PingMonitor/SchedulerTimer for Ping ,  Client Actions/SchedulerTimer for Ping
 	public static final long CLIENT2SERVER_PING_PERIOD=5000;
-	public static final long SERVER2SERVER_PING_PERIOD=5000;
-	public static final long SERVER2CLIENT_TIMEOUT = 2* CLIENT2SERVER_PING_PERIOD;
-	public static final long SERVER2SERVER_TIMEOUT = 20000;
+	public static final long SERVER2SERVER_PING_PERIOD=2000;
+	public static final long SERVER2CLIENT_TIMEOUT = 4* CLIENT2SERVER_PING_PERIOD;
+	public static final long SERVER2SERVER_TIMEOUT = 3* SERVER2SERVER_PING_PERIOD;
 	
 	public static final long SERVER_CHECKPOINT_PERIOD = 3000;
 	

@@ -32,6 +32,7 @@ import structInfo.LogInfo.Action;
 import structInfo.Constants;
 import structInfo.ServerInfo;
 import structInfo.UnitType;
+import units.Player;
 import units.Unit;
 
 import messages.Message;
@@ -79,6 +80,9 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		case PendingMoveInvalid:
 			onPendingMoveInvalidMessageReceived(serverServerMessage);
 			break;
+		case NewPlayer:
+			onNewPlayerMessageReceived(serverServerMessage);
+			break;
 		case NewValidAction:
 			onSendValidActionMessageReceived(serverServerMessage);
 			break;
@@ -110,6 +114,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 	
 
 	
+
 
 
 
@@ -223,6 +228,20 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		 System.out.println("SS7 "+System.currentTimeMillis()+" Server: ACK sent to Server"+ serverSender.getName()+ "serverID: "+ serverInfo.getServerID());
 		
 	}
+	
+
+	private void onNewPlayerMessageReceived(ServerServerMessage message) {
+		System.out.println("onNewPlayerMessageReceived");
+		int playerX = Integer.valueOf(message.getContent().get("x"));
+		int playerY = Integer.valueOf(message.getContent().get("y"));
+		int playerUnitID = Integer.valueOf(message.getContent().get("unitID"));
+		int playerServerOwnerID = Integer.valueOf(message.getContent().get("serverOwnerID"));
+		//create player to battlefield from other Server
+		Player newPlayer = new Player(playerX, playerY,Server.getBattlefield(), playerUnitID,playerServerOwnerID);
+	}
+	
+	
+	
 
 	private void onSendValidActionMessageReceived(ServerServerMessage message) {
 		System.out.println("SS4 "+System.currentTimeMillis()+" MESSAGE" );
@@ -446,7 +465,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		 try {
 			 serverRMI.onMessageReceived(sendPendingMoveInvalid);
 		 } catch (RemoteException | NotBoundException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		 }
 		
 		 System.out.println("SS2 "+System.currentTimeMillis()+" Server: PendingMoveInvalid sent to Server"+ message.getSender()+ "serverIP: "+ message.getSender());

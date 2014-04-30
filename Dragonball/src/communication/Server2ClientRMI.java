@@ -179,7 +179,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 						serverToConnect = new Node(serverInfoMinClients.getName(),serverInfoMinClients.getIP());
 					}
 				}
-				//only one server and full of clientss
+				//only one server and full of clients
 				if(serverToConnect==null)
 					return;
 				
@@ -232,6 +232,39 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		this.serverOwner.putToClientList(newClient);
 		//update number of clients
 		Server.getMyInfo().setNumClients(Server.getClientList().size());
+		
+		//broadcast to Servers the New Player Subscription
+		for(ServerInfo serverInfo: Server.getServerList().values()){
+			if(!serverInfo.isRunsGame()) continue;
+			System.err.println(Server.getMyInfo().getName()+": sends New Player");
+			
+			 ServerServerMessage sendCreatePlayer = new ServerServerMessage(
+									MessageType.NewPlayer,
+									Server.getMyInfo().getName(),
+									Server.getMyInfo().getIP(),
+									serverInfo.getName(),
+									serverInfo.getIP());
+			 
+			 Unit newPlayer = Server.getBattlefield().getUnitByUnitID(newUnitID);
+			 sendCreatePlayer.setContent("x", String.valueOf(newPlayer.getX()));
+			 sendCreatePlayer.setContent("y", String.valueOf(newPlayer.getY()));
+			 sendCreatePlayer.setContent("unitID", String.valueOf(newPlayer.getUnitID()));
+			 sendCreatePlayer.setContent("serverOwnerID", String.valueOf(newPlayer.getServerOwnerID()));
+			 
+			//sending the PendingInvalid message to subscribed client
+			 ServerServer serverRMI=null;
+			 serverRMI = Server.getServerReg(new Node(serverInfo.getName(),serverInfo.getIP()));
+			 
+			 if(serverRMI == null) return;
+			
+			 try {
+				 serverRMI.onMessageReceived(sendCreatePlayer);
+			 } catch (RemoteException | NotBoundException e) {
+				e.printStackTrace();
+			 }
+			
+			 System.out.println("Server: sendCreatePlayer sent to Server"+ serverInfo.getName()+ "serverIP: "+ serverInfo.getIP());
+		}
 
 		
 		
@@ -318,11 +351,11 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 												senderUnit.getType(senderUnit.getX(),senderUnit.getY()),
 												targetUnitID, 
 												targetX, targetY, targetType,
-												message.getTimeIssuedFromServer(), message.getSender());
+												message.getTimeIssuedFromServer(), Server.getMyInfo().getName());
 		System.out.println("New Action : "+ newPendingAction.toString());
 		
 		//add action as pending move 
-		this.serverOwner.getPendingActions().put(String.valueOf(targetX)+" "+String.valueOf(targetY), newPendingAction);
+		Server.getPendingActions().put(String.valueOf(targetX)+" "+String.valueOf(targetY), newPendingAction);
 		
 		//broadcast to all servers running the game the new Pending Move
 		for(ServerInfo serverInfo: Server.getServerList().values()){
@@ -348,9 +381,9 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 			try {
 				serverComm.onMessageReceived(checkPendingMessage);
 			} catch (RemoteException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 			} catch (NotBoundException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 			}
 		}
 		

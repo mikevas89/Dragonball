@@ -143,7 +143,7 @@ public class BattleFieldViewer extends JPanel implements Runnable {
 		});
 		f.add(this);
 		f.setMinimumSize(new Dimension(200, 200));
-		f.setSize(1000, 1000);
+		f.setSize(300, 300);
 		f.setVisible(true);
 		
 		while(GameState.getRunningState()) {		

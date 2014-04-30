@@ -1,6 +1,10 @@
 package structInfo;
 
-public class LogInfo {
+import java.io.Serializable;
+
+public class LogInfo implements Serializable{
+
+	private static final long serialVersionUID = 1L;
 
 	public enum Action {
 		Move, Heal, Damage, Removed

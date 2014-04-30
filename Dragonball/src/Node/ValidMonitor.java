@@ -38,20 +38,23 @@ public class ValidMonitor implements Runnable{
 				e.printStackTrace();
 			}
 			System.out.println("ValidMonitor : ActionToValid-> "+ newAction.toString());
-			
-			//A Removed Action has received from other Server
-			if(newAction.getAction().equals(Action.Removed)){
-				ListIterator<Unit> it =Server.getBattlefield().getUnits().listIterator();
-		 		while(it.hasNext()){ 
-		 			Unit unit= it.next();
-		 			if(unit.getUnitID() == newAction.getSenderUnitID()){
-		 				Server.getBattlefield().removeUnit(unit.getX(), unit.getY(), it);
-		 				break;
-		 			}
-		 		}
-		 		//logs the new Valid Action "Removed"
-				this.validActions.add(newAction);	
-				continue;
+			synchronized (Server.lock) {
+				// A Removed Action has received from other Server
+				if (newAction.getAction().equals(Action.Removed)) {
+					ListIterator<Unit> it = Server.getBattlefield().getUnits()
+							.listIterator();
+					while (it.hasNext()) {
+						Unit unit = it.next();
+						if (unit.getUnitID() == newAction.getSenderUnitID()) {
+							Server.getBattlefield().removeUnit(unit.getX(),
+									unit.getY(), it);
+							break;
+						}
+					}
+					// logs the new Valid Action "Removed"
+					this.validActions.add(newAction);
+					continue;
+				}
 			}
 			
 			if (!newAction.getSenderType().equals(UnitType.dragon)) {
@@ -127,6 +130,8 @@ public class ValidMonitor implements Runnable{
 			Create thread for sending Valid Action
 			----------------------------------------------------		
 			 */
+			System.err.println(Server.getMyInfo().getName()+": sends Valid Action - on Valid Monitor");
+			
 			Runnable validActionSender = new ValidActionSender(newAction);
 			new Thread(validActionSender).start();
 						
@@ -141,7 +146,7 @@ public class ValidMonitor implements Runnable{
 													targetUnit.getUnitID(), 
 													targetUnit.getX(),targetUnit.getY(),
 													targetUnit.getType(targetUnit.getX(),targetUnit.getY()),
-													System.currentTimeMillis(), "0.0.0.0");
+													System.currentTimeMillis(), Server.getMyInfo().getName());
 				this.validActions.add(playerDown);
 				
 				Runnable validActionPlayerDownSender = new ValidActionSender(playerDown);

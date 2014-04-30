@@ -7,6 +7,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.ListIterator;
 
 import structInfo.LogInfo;
 import structInfo.ServerInfo;
@@ -120,18 +121,25 @@ public class PingMonitorSender implements Runnable{
 				ServerInfo serverInfoForRemovedServer = Server.getServerList()
 						.get(this.getReferencedNode());
 				// remove players of the server
-				for (Unit unit : Server.getBattlefield().getUnits()) {
-					if (unit.getServerOwnerID() == serverInfoForRemovedServer.getServerID()) {
-						LogInfo playerDown = new LogInfo(Action.Removed,
-								unit.getUnitID(), unit.getX(), unit.getY(),
-								unit.getType(unit.getX(), unit.getY()),
-								unit.getUnitID(), unit.getX(), unit.getY(),
-								unit.getType(unit.getX(), unit.getY()),
-								System.currentTimeMillis(), "0.0.0.0");
-						try {
-							Server.getValidBlockQueue().put(playerDown);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
+				synchronized (Server.lock) {
+					Iterator<Unit> it = Server.getBattlefield().getUnits()
+							.listIterator();
+					while (it.hasNext()) {
+						Unit unit = it.next();
+						if (unit.getServerOwnerID() == serverInfoForRemovedServer
+								.getServerID()) {
+							LogInfo playerDown = new LogInfo(Action.Removed,
+									unit.getUnitID(), unit.getX(), unit.getY(),
+									unit.getType(unit.getX(), unit.getY()),
+									unit.getUnitID(), unit.getX(), unit.getY(),
+									unit.getType(unit.getX(), unit.getY()),
+									System.currentTimeMillis(),
+									serverInfoForRemovedServer.getName());
+							try {
+								Server.getValidBlockQueue().put(playerDown);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
 						}
 					}
 				}

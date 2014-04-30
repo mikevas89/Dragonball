@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import Node.Node;
 
 import structInfo.LogInfo;
+import units.Unit;
 
 public class ServerServerMessage extends Message implements Serializable{
 	

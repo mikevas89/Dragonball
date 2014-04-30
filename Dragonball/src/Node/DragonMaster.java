@@ -78,7 +78,7 @@ public class DragonMaster implements Runnable {
 
 			// Sleep while the dragon is considering its next move
 			try {
-				Thread.sleep(Constants.CLIENT_PERIOD_ACTION);
+				Thread.sleep(Constants.DRAGON_PERIOD_ACTION);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

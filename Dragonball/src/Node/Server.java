@@ -81,12 +81,15 @@ public class Server extends Node implements java.io.Serializable{
 	private Timer serverServerTimeoutTimer;
 	private static ServerInfo myInfo;
 	private static int myServerID;
+	
+	public static Object lock;
 
 
 	public int test=0;
 
 	public Server() throws IOException{
 		super();
+		lock = new Object();
 		serverList = new ConcurrentHashMap<Node, ServerInfo>();
 		clientList= new ConcurrentHashMap<Node, ClientPlayerInfo>(); //list of clients connected to that server
 		PendingActions= Collections.synchronizedMap(new HashMap<String, LogInfo>());   // list of pending action
@@ -231,8 +234,8 @@ public class Server extends Node implements java.io.Serializable{
 				*/
 				while(!Server.killServer)
 				{
-					Server.printlist();
-					System.out.println("Server is getting a Checkpoint of the BattleField...");
+					//Server.printlist();
+					//System.out.println("Server is getting a Checkpoint of the BattleField...");
 					Server.getCheckPoint().captureCheckPoint(Server.getBattlefield(), Server.getValidActions());
 					try {
 						Thread.sleep(Constants.SERVER_CHECKPOINT_PERIOD);
@@ -543,7 +546,7 @@ public class Server extends Node implements java.io.Serializable{
 			
 			if(serverComm == null) continue;
 			
-			System.out.println("Server: "+ myInfo.getName() + " sends Ping to "+ serverInfo.getName());
+			//System.out.println("Server: "+ myInfo.getName() + " sends Ping to "+ serverInfo.getName());
 
 			try {
 				serverComm.onMessageReceived(pingMessage);
@@ -648,7 +651,7 @@ public class Server extends Node implements java.io.Serializable{
 								unit.getType(unit.getX(), unit.getY()),
 								unit.getUnitID(), unit.getX(), unit.getY(),
 								unit.getType(unit.getX(), unit.getY()),
-								System.currentTimeMillis(), "0.0.0.0");
+								System.currentTimeMillis(), serverInfoForRemovedServer.getName());
 						try {
 							Server.getValidBlockQueue().put(playerDown);
 						} catch (InterruptedException e) {

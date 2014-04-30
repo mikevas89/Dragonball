@@ -55,5 +55,34 @@ public class Player extends Unit implements Serializable {
 		if (!spawnOnBattlefield(x, y))
 			return; // We could not spawn on the battlefield
 	}
+	
+	
+	public Player(int x, int y,BattleField battlefield ,int unitID, int serverOwnerID){
+		/* Initialize the hitpoints and attackpoints */
+		super((int)(Math.random() * (MAX_HITPOINTS - MIN_HITPOINTS) + MIN_HITPOINTS), 
+				(int)(Math.random() * (MAX_ATTACKPOINTS - MIN_ATTACKPOINTS) + MIN_ATTACKPOINTS),
+				battlefield);
+		
+		this.setUnitID(unitID);
+		this.setServerOwnerID(serverOwnerID);
 
+		/* Create a random delay */
+		timeBetweenTurns = (int)(Math.random() * (MAX_TIME_BETWEEN_TURNS - MIN_TIME_BETWEEN_TURNS)) + MIN_TIME_BETWEEN_TURNS;
+		if (!spawnOnBattlefield(x, y))
+			return; // We could not spawn on the battlefield
+	}
+	
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 }

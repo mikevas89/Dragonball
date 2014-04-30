@@ -154,7 +154,7 @@ public class Client extends Node{
 				//server.setName(Client.getServerList().get(firstServer).getName());
 				//server.setIP(Client.getServerList().get(firstServer).getIP());
 				//put names for testing
-				server.setName("Server1");
+				server.setName("Server2");
 				server.setIP("127.0.0.1");
 				
 				System.out.println(server.getIP());
@@ -192,7 +192,7 @@ public class Client extends Node{
 					
 						Client.printlist();
 						
-						Thread.sleep(Constants.CLIENT_PERIOD_ACTION);
+						Thread.sleep(Constants.PLAYER_PERIOD_ACTION);
 						System.out.println("Connected serverName:"+ client.getServerConnected().getName());
 						ServerInfo serverInfo = Client.getServerList().get(client.getServerConnected());
 						if(serverInfo ==null)
@@ -459,7 +459,7 @@ public class Client extends Node{
 											this.serverConnected.getIP());
 		//send the subscription message to the server
 		ClientServer serverComm = null;
-		serverComm = this.getServerReg(this.serverConnected);
+		serverComm = Client.getServerReg(this.serverConnected);
 
 		try {
 			serverComm.onMessageReceived(pingMessage);

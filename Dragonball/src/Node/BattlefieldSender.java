@@ -29,7 +29,7 @@ public class BattlefieldSender implements Runnable, java.io.Serializable {
 		//broadcasts the new battlefield to ALL clients
 		while(!Server.killServer){
 			try {
-				Thread.sleep(Constants.BROADCAST_PERIOD_TO_CLIENTS);
+				Thread.sleep(Constants.BROADCAST_BATTLEFIELD_PERIOD_TO_CLIENTS);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
