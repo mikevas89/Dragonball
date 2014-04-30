@@ -56,8 +56,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 	}
 
 	@Override
-	public void onMessageReceived(Message message) throws RemoteException,
-			NotBoundException {
+	public void onMessageReceived(Message message)  {
 		// if the message is not a proper ClientServerMessage, it is discarded
 		if (!(message instanceof ServerServerMessage) || !message.getReceiver().equals(this.serverOwner.getName()))
 			return;
@@ -244,7 +243,12 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 	
 
 	private void onSendValidActionMessageReceived(ServerServerMessage message) {
-		System.out.println("SS4 "+System.currentTimeMillis()+" MESSAGE" );
+		long currentTime = System.currentTimeMillis();
+		int totalNumClients = Server.getMyInfo().getNumClients();
+		for(ServerInfo serverInfo: Server.getServerList().values()){
+			totalNumClients+=serverInfo.getNumClients();
+		}
+		System.out.println("SS4 "+currentTime+" "+(currentTime - message.getActionToBeChecked().getTimestamp())+" "+totalNumClients );
 		LogInfo newRemoteAction = message.getActionToBeChecked();
 		
 		//Removed Action was received

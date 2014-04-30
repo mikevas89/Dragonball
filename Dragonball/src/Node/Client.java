@@ -154,7 +154,7 @@ public class Client extends Node{
 				//server.setName(Client.getServerList().get(firstServer).getName());
 				//server.setIP(Client.getServerList().get(firstServer).getIP());
 				//put names for testing
-				server.setName("Server2");
+				server.setName("Server1");
 				server.setIP("127.0.0.1");
 				
 				System.out.println(server.getIP());
