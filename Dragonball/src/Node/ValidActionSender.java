@@ -52,7 +52,7 @@ public class ValidActionSender implements Runnable {
 				//e.printStackTrace();
 			 }
 			
-			 System.out.println("Server: sendValidAction sent to Server"+ serverInfo.getName()+ "serverIP: "+ serverInfo.getIP());
+			 //System.out.println("Server: sendValidAction sent to Server"+ serverInfo.getName()+ "serverIP: "+ serverInfo.getIP());
 		}
 		
 	}

@@ -3,6 +3,7 @@ package Node;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import structInfo.Constants;
 import structInfo.LogInfo;
@@ -11,10 +12,10 @@ import units.Unit;
 public class PendingMonitor implements Runnable {
 
 		Map<String, LogInfo> PendingActions;
-		private BlockingQueue<LogInfo> validBlockQueue;
+		private LinkedBlockingQueue<LogInfo> validBlockQueue;
 
 		
-		public PendingMonitor(Map<String, LogInfo> pendinglist, BlockingQueue<LogInfo> validBlockQueue)
+		public PendingMonitor(Map<String, LogInfo> pendinglist, LinkedBlockingQueue<LogInfo> validBlockQueue)
 		{
 			this.PendingActions=pendinglist;
 			this.validBlockQueue=validBlockQueue;

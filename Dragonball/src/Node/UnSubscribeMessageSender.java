@@ -44,7 +44,7 @@ public class UnSubscribeMessageSender implements Runnable{
 			}
 		}
 		//remove Pending to Valid Actions from Queue
-		for(Iterator<LogInfo> it= Server.getValidActions().iterator();it.hasNext();){
+		for(Iterator<LogInfo> it= Server.getValidBlockQueue().iterator();it.hasNext();){
 			LogInfo entry = it.next();
 			if((entry.getSenderUnitID()==unit.getUnitID() ||
 					entry.getTargetUnitID()==unit.getUnitID()) && !entry.getAction().equals(Action.Removed)){

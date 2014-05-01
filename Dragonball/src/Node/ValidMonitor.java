@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import structInfo.LogInfo;
 import structInfo.LogInfo.Action;
@@ -16,9 +17,9 @@ public class ValidMonitor implements Runnable{
 
 	private Map<String,LogInfo> pendingActions;
 	private ArrayList<LogInfo> validActions;
-	private BlockingQueue<LogInfo> validBlockQueue;
+	private LinkedBlockingQueue<LogInfo> validBlockQueue;
 	
-	public ValidMonitor(Map<String,LogInfo> pendingActions, ArrayList<LogInfo> validActions, BlockingQueue<LogInfo> validBlockQueue){
+	public ValidMonitor(Map<String,LogInfo> pendingActions, ArrayList<LogInfo> validActions, LinkedBlockingQueue<LogInfo> validBlockQueue){
 		this.setPendingActions(pendingActions);
 		this.setValidActions(validActions);
 		this.setValidBlockQueue(validBlockQueue);
@@ -33,7 +34,7 @@ public class ValidMonitor implements Runnable{
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			System.out.println("ValidMonitor :-> "+ newAction.toString());
+			//System.out.println("ValidMonitor :-> "+ newAction.toString());
 			synchronized (Server.lock) {
 				// A Removed Action has received from other Server
 				if (newAction.getAction().equals(Action.Removed)) {
@@ -149,11 +150,11 @@ public class ValidMonitor implements Runnable{
 		this.validActions = validActions;
 	}
 
-	public BlockingQueue<LogInfo> getValidBlockQueue() {
+	public LinkedBlockingQueue<LogInfo> getValidBlockQueue() {
 		return validBlockQueue;
 	}
 
-	public void setValidBlockQueue(BlockingQueue<LogInfo> validBlockQueue) {
+	public void setValidBlockQueue(LinkedBlockingQueue<LogInfo> validBlockQueue) {
 		this.validBlockQueue = validBlockQueue;
 	}
 

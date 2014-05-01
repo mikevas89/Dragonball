@@ -70,7 +70,7 @@ public class Server extends Node implements java.io.Serializable{
 	private static BattleField battlefield; 
 	private static Map<String, LogInfo> PendingActions; //pending moves
 	private static ArrayList<LogInfo> ValidActions; //log of the valid actions
-	private static BlockingQueue<LogInfo> validBlockQueue;//intermediate between valid and pending
+	private static LinkedBlockingQueue<LogInfo> validBlockQueue;//intermediate between valid and pending
 	private static CheckPoint checkPoint;
 	private volatile static boolean startDragons;
 	private volatile static boolean runDragons;
@@ -817,7 +817,7 @@ public class Server extends Node implements java.io.Serializable{
 		Server.checkPoint = checkPoint;
 	}
 
-	public static BlockingQueue<LogInfo> getValidBlockQueue() {
+	public static LinkedBlockingQueue<LogInfo> getValidBlockQueue() {
 		return validBlockQueue;
 	}
 

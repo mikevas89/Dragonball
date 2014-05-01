@@ -12,11 +12,10 @@ import interfaces.ServerServer;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
-
 
 
 
@@ -30,13 +29,13 @@ import structInfo.LogInfo.Action;
 import structInfo.Constants;
 import structInfo.ServerInfo;
 import structInfo.UnitType;
-import units.Player;
+;<<<<<<< HEAD
 import units.Unit;
 
+>>>>>>> fault-tolerance
 import messages.Message;
 import messages.MessageType;
 import messages.ServerServerMessage;
-import Node.CheckPointMessageSender;
 import Node.Node;
 import Node.PingMonitorSender;
 import Node.Server;
@@ -54,19 +53,19 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 	}
 
 	@Override
-	public synchronized void onMessageReceived(Message message) {
+	public void onMessageReceived(Message message) throws RemoteException,
+			NotBoundException {
 		// if the message is not a proper ClientServerMessage, it is discarded
-		if (!(message instanceof ServerServerMessage)
-				|| !message.getReceiver().equals(this.serverOwner.getName()))
+		if (!(message instanceof ServerServerMessage) || !message.getReceiver().equals(this.serverOwner.getName()))
 			return;
 
 		// issued time of Message in the Server;
-		message.setTimeIssuedFromServer(System.nanoTime());
+		message.setTimeIssuedFromServer(System.currentTimeMillis());
 		ServerServerMessage serverServerMessage = (ServerServerMessage) message;
 
-		//System.out.println("Server: Received Message from "
-	//			+ message.getSender() + " to " + message.getReceiver()
-	//			+ " Time: " + message.getTimeIssuedFromServer());
+		System.out.println("Server: Received Message from "+ message.getSender()+ " to "+ message.getReceiver()
+									+" Time: "+ message.getTimeIssuedFromServer());
+		// TODO: spawn a thread to handle the message
 
 		switch (message.getMessageTypeRequest()) {
 		case ServerServerPing:
@@ -78,17 +77,11 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		case PendingMoveInvalid:
 			onPendingMoveInvalidMessageReceived(serverServerMessage);
 			break;
-		case NewPlayer:
-			onNewPlayerMessageReceived(serverServerMessage);
-			break;
-		case NewValidAction:
+		case SendValidAction://TODO
 			onSendValidActionMessageReceived(serverServerMessage);
 			break;
-		case NewCheckPoint:
-			onNewCheckPointMessageReceived(serverServerMessage);
-			break;
 		case ProblematicServer:
-			onProblematicServerMessageReceived(serverServerMessage);
+			onProblematicServerMessageReceived(serverServerMessage);	
 			break;
 		case ResponseProblematicServer:
 			onResponseProblematicServerMessageReceived(serverServerMessage);
@@ -108,17 +101,15 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		default:
 			break;
 		}
-
 	}
+	
 
 	
 
 
 
-
 	private void onPendingMoveInvalidMessageReceived(ServerServerMessage message) {
-		System.out.println("SS3 "+System.nanoTime());
-		System.out.println("onPendingMoveInvalidMessageReceived");
+		System.out.println("SS3 "+System.currentTimeMillis()+" onPendingMoveInvalidMessageReceived");
 		Map<String, LogInfo> pendingLog = Server.getPendingActions();
 		//iterate and remove the pending invalid move
 		for(Iterator<Entry<String, LogInfo>> it= pendingLog.entrySet().iterator();it.hasNext();){
@@ -134,9 +125,15 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 	}
 
 	private void onRequestBattlefieldMessageReceived(ServerServerMessage message) {
-		System.out.println("SS8 "+System.nanoTime()+" onRequestBattlefieldMessageReceived");
+<<<<<<< HEAD
+		System.out.println("SS8 "+System.currentTimeMillis()+" onRequestBattlefieldMessageReceived");
+		Node serverSender=new Node(message.getSender(),message.getSender());
+		ServerInfo serverInfo= Server.getServerList().get((serverSender));
+=======
+		System.out.println("onRequestBattlefieldMessageReceived");
 		Node serverSender=new Node(message.getSender(),message.getSenderIP());
 		ServerInfo serverInfo= Server.getServerList().get(serverSender);
+>>>>>>> fault-tolerance
 
 		if(serverInfo==null){
 			System.err.println("Unknown Server: "+ message.getSender() +" requests the Battlefield");
@@ -155,15 +152,15 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		try {
 			serverComm.onMessageReceived(sendBattleFieldMessage);
 		} catch (RemoteException e) {
-			//e.printStackTrace();
+			e.printStackTrace();
 		} catch (NotBoundException e) {
-			//e.printStackTrace();
+			e.printStackTrace();
 		}	
 		
 	}
 
 	private void onGetBattlefieldMessageReceived(ServerServerMessage message) {
-		System.out.println("SS9 "+System.nanoTime()+" onGetBattlefieldMessageReceived");
+		System.out.println("SS9 "+System.currentTimeMillis()+" onGetBattlefieldMessageReceived");
 		
 		System.out.println("BattleFieled updated from the Server "+ message.getSender()+" to Server "+ message.getReceiver());
 		//update the battlefield of the subscribed client
@@ -224,145 +221,15 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 			e.printStackTrace();
 		 }
 		
-		 System.out.println("SS7 "+System.nanoTime());
+		 System.out.println("SS7 "+System.currentTimeMillis()+" Server: ACK sent to Server"+ serverSender.getName()+ "serverID: "+ serverInfo.getServerID());
 		
 	}
-	
-
-	private void onNewPlayerMessageReceived(ServerServerMessage message) {
-		System.out.println("onNewPlayerMessageReceived");
-		int playerX = Integer.valueOf(message.getContent().get("x"));
-		int playerY = Integer.valueOf(message.getContent().get("y"));
-		int playerUnitID = Integer.valueOf(message.getContent().get("unitID"));
-		int playerServerOwnerID = Integer.valueOf(message.getContent().get("serverOwnerID"));
-		//create player to battlefield from other Server
-		Player newPlayer = new Player(playerX, playerY,Server.getBattlefield(), playerUnitID,playerServerOwnerID);
-		System.out.println("SS15 onNewPlayerMessageReceived");
-	}
-	
-	
-	
 
 	private void onSendValidActionMessageReceived(ServerServerMessage message) {
-		
-
-		LogInfo newRemoteAction = message.getActionToBeChecked();
-		
-		
-		// Removed Action was received
-		synchronized (Server.lock) {
-			if (newRemoteAction.getAction().equals(Action.Removed)) {
-				ListIterator<Unit> it = Server.getBattlefield().getUnits()
-						.listIterator();
-				while (it.hasNext()) {
-					Unit unit = it.next();
-					if (unit.getUnitID() == newRemoteAction.getSenderUnitID()) {
-						Server.getBattlefield().removeUnit(unit.getX(),
-								unit.getY(), it);
-						//put action to the local log file
-						Server.getValidActions().add(newRemoteAction);
-						this.printResponseTime(message);
-						return;
-					}
-				}
-			}
-		}
-		
-		 //after this, the action is valid and it WILL BE played (targetUnitID may also be -1)
-		Unit existingTargetUnit=Server.getBattlefield().getUnit(newRemoteAction.getTargetX(), newRemoteAction.getTargetY());
-	    int existingTargetUnitID;
-	    if(existingTargetUnit==null)
-	    	existingTargetUnitID=-1;
-	    else
-	    	existingTargetUnitID=existingTargetUnit.getUnitID();
-	    try{
-	    if(Server.getBattlefield().
-	    		getUnit(newRemoteAction.getSenderX(), newRemoteAction.getSenderY()).getUnitID()!=newRemoteAction.getSenderUnitID() ||
-	    		existingTargetUnitID!=newRemoteAction.getTargetUnitID()){
-				    	System.err.println("onSendValidAction found an inconsistency from the Remote Action");
-						//clear the pending/validBlockQueue
-						Server.getPendingActions().clear();
-						Server.getValidBlockQueue().clear();
-						//copy checkpoint state to running battlefield
-						Server.getBattlefield().copyMap(Server.getCheckPoint().getMap());
-						Server.getBattlefield().copyListUnits(Server.getCheckPoint().getUnits());
-						Server.copyValidActions(Server.getCheckPoint().getCheckPointValidActions());
-						//broadcast the checkpoint battlefield to all
-						Runnable checkPointMessage = new CheckPointMessageSender();
-						new Thread(checkPointMessage).start();
-					    printResponseTime(message);
-						return;
-	    }
-	    }catch(NullPointerException e){
-	    	System.out.println("False on getUnit");
-	    }
-	    
-	    if(newRemoteAction.getSenderType().equals(UnitType.dragon)){
-	    	Unit dragonUnit = Server.getBattlefield().getUnit(newRemoteAction.getSenderX(),newRemoteAction.getSenderY());
-	    	Unit targetUnit = Server.getBattlefield().getUnit(newRemoteAction.getTargetX(),newRemoteAction.getTargetY());
-	    	Server.getBattlefield().dealDamage(targetUnit.getX(), targetUnit.getY(), dragonUnit.getAttackPoints());
-	    	//check if the targetUnit is mine and perhaps wants removal
-	    	Server.checkIfUnitIsDead(newRemoteAction);
-	    	Server.getValidActions().add(newRemoteAction);
-	    }
-	    else {//senderType is Player
-	    	try{
-	    	Unit senderUnit = Server.getBattlefield().getUnit(newRemoteAction.getSenderX(), newRemoteAction.getSenderY());
-	    	
-	    	switch (newRemoteAction.getTargetType()) {
-			case undefined:
-				// There is no unit in the square. Move the player to this
-				// square
-				Server.getBattlefield().moveUnit(senderUnit,
-						newRemoteAction.getTargetX(), newRemoteAction.getTargetY());
-				break;
-			case player:
-				// There is a player in the square, attempt a healing
-				Server.getBattlefield().healDamage(newRemoteAction.getTargetX(),
-						newRemoteAction.getTargetY(),
-						senderUnit.getAttackPoints());
-				break;
-			case dragon:
-				// There is a dragon in the square, attempt a dragon slaying
-				Server.getBattlefield().dealDamage(newRemoteAction.getTargetX(),
-						newRemoteAction.getTargetY(),
-						senderUnit.getAttackPoints());
-				//check if this server handles the dragons and remove him if dead
-		    	Server.checkIfUnitIsDead(newRemoteAction);
-				break;
-			}
-			// logs the new Valid Action
-			Server.getValidActions().add(newRemoteAction);
-	    }catch(NullPointerException e){
-	    	System.out.println("False on getUnit");
-	    }
-	    }
-	    printResponseTime(message);
-
+		//TODO
+		//TODO
+		System.out.println("SS4 "+System.currentTimeMillis()+" MESSAGE" );
 	}
-	
-
-	private void printResponseTime(ServerServerMessage message) {
-		int totalNumClients = Server.getMyInfo().getNumClients();
-		for(ServerInfo serverInfo: Server.getServerList().values()){
-			totalNumClients+=serverInfo.getNumClients();
-		}
-		long responseTime = System.nanoTime() - message.getTimeIssuedFromServer();
-		long responseTimeFromOtherServer = Long.parseLong(message.getContent().get("responseTime"));
-		System.out.println("SS4 "+responseTime+responseTimeFromOtherServer+" "+totalNumClients );
-	}
-
-	private void onNewCheckPointMessageReceived(ServerServerMessage message) {
-		System.out.println("onNewCheckPointMessageReceived");
-		Server.getPendingActions().clear();
-		Server.getValidBlockQueue().clear();
-		//update battlefield and validActions due to an inconsistency to another Server
-		Server.getBattlefield().copyBattleField(message.getBattlefield());
-		Server.copyValidActions(message.getValidActionsLog());
-		//update server's checkpoint to the received one
-		Server.getCheckPoint().captureCheckPoint(message.getBattlefield(), message.getValidActionsLog());		
-	}
-
 
 
 	private void onProblematicServerMessageReceived(ServerServerMessage message) {
@@ -380,7 +247,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		
 		Runnable pingMonitorSender=null;
 		//current server decides about problematicServer 
-		if((System.nanoTime() - serverInfo.getRemoteNodeTimeLastPingSent()) > Constants.SERVER2SERVER_PING_PERIOD*Constants.NANO){
+		if(System.currentTimeMillis() - serverInfo.getRemoteNodeTimeLastPingSent() > Constants.SERVER2SERVER_PING_PERIOD){
 			System.out.println(Server.getMyInfo().getName()+" Agree for "+ serverInfo.getName());
 			serverInfo.setNumAnswersAgreeRemovingServer(serverInfo.getNumAnswersAgreeRemovingServer()+1);
 			pingMonitorSender=new PingMonitorSender(problematicServer,MessageType.ResponseProblematicServer,
@@ -399,18 +266,23 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		//broadcast node's decision
 		new Thread(pingMonitorSender).start();
 		
-		System.out.println("SS5 "+System.nanoTime()+" MESSAGE" );
-
+<<<<<<< HEAD
+		System.out.println("SS5 "+System.currentTimeMillis()+" MESSAGE" );
+=======
 		if(serverInfo.getTotalNumAnswersAggreement() >= (Server.getNumAliveServers() - Server.getNumProblematicServers())){
 			//ready to decide
 			this.serverOwner.DecideForRemoval(problematicServer);
 		}
 			
+>>>>>>> fault-tolerance
+
 	}
 	
 
 	private void onResponseProblematicServerMessageReceived(ServerServerMessage message) {
-		System.out.println("SS6 "+System.nanoTime());
+<<<<<<< HEAD
+		System.out.println("SS6 "+System.currentTimeMillis()+" MESSAGE" );
+=======
 		System.out.println("onResponseProblematicServerMessageReceived");
 		Node problematicServer = message.getProblematicServerToCheck();
 		ServerInfo serverInfo = Server.getServerList().get(problematicServer);
@@ -433,11 +305,14 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		//ready to decide
 		this.serverOwner.DecideForRemoval(problematicServer);
 		
+		
+>>>>>>> fault-tolerance
+		
 	}
 	
 	
 	private void onCheckPendingMessageReceived(ServerServerMessage message) {
-		//System.out.println("onCheckPendingMessageReceived");
+		System.out.println("onCheckPendingMessageReceived");
 		boolean hasToReplyPendingInvalid=false;
 		
 		LogInfo messagePendingMove = message.getActionToBeChecked();
@@ -495,27 +370,29 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		 try {
 			 serverRMI.onMessageReceived(sendPendingMoveInvalid);
 		 } catch (RemoteException | NotBoundException e) {
-			//e.printStackTrace();
+			e.printStackTrace();
 		 }
 		
-		 System.out.println("SS2 "+System.nanoTime());
+		 System.out.println("SS2 "+System.currentTimeMillis()+" Server: PendingMoveInvalid sent to Server"+ message.getSender()+ "serverIP: "+ message.getSender());
 	}
 
 	private void onServerServerPingMessageReceived(ServerServerMessage message) {
-		System.out.println("SS1 "+System.nanoTime());
-		//System.out.println("onServerServerPingMessageReceived");
+<<<<<<< HEAD
+		System.out.println("SS1 "+System.currentTimeMillis()+" onServerServerPingMessageReceived");
+		Node server = new Node(message.getSender(), message.getSender());
+		ServerInfo result = Server.getServerList().get(server);
+		if (result == null)
+=======
+		System.out.println("onServerServerPingMessageReceived");
 		
 		Node server = new Node(message.getSender(), message.getSenderIP());
 		ServerInfo serverInfo = Server.getServerList().get(server);
 		if (serverInfo == null)
+>>>>>>> fault-tolerance
 			return; // client is not player in my database
 		if(!serverInfo.isAlive())
 			return;
-		//update server's info
-		serverInfo.setNumClients(message.getNumClients());
-		serverInfo.setRunsGame(message.isSenderRunsGame());
-		serverInfo.setRunsDragons(message.isSenderRunsDragons());
-		serverInfo.setRemoteNodeTimeLastPingSent(System.nanoTime());
+		serverInfo.setRemoteNodeTimeLastPingSent(System.currentTimeMillis());
 		Server.getServerList().replace(server, serverInfo);
 	}
 

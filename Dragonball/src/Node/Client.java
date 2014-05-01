@@ -63,7 +63,7 @@ public class Client extends Node{
 		int numClient = this.getUniqueIdForName("Clientid.txt");
 		//unique name of Client
 		this.setName("Client"+ String.valueOf(numClient));
-		this.setIP("192.168.1.5");
+		this.setIP("192.168.1.14");
 		System.out.println("Client Name: "+ this.getName());
 		this.isSubscribed=false;
 		
@@ -132,8 +132,8 @@ public class Client extends Node{
 				//server.setName(Client.getServerList().get(firstServer).getName());
 				//server.setIP(Client.getServerList().get(firstServer).getIP());
 				//put names for testing
-				server.setName("Server1");
-				server.setIP("192.168.1.5");
+				server.setName("Server2");
+				server.setIP("192.168.1.14");
 				
 				System.out.println(server.getIP());
 				
@@ -220,7 +220,7 @@ public class Client extends Node{
 									targetX=temp.getX();
 									targetY=temp.getY();
 									founddragon=1;
-									System.err.println("FIGHTING A DRAGON!!!!!!!");
+								//	System.err.println("FIGHTING A DRAGON!!!!!!!");
 									break;
 								}
 								
@@ -283,9 +283,6 @@ public class Client extends Node{
 							
 							
 						}
-					
-						if(targetX == prevX && targetY == prevY)
-							System.err.println("CLIENT WILL HEAL HIMSELF/ previous was in X: "+prevX+ " Y: "+prevY);
 						
 						Unit targetUnit=Client.getBattleField().getUnit(targetX, targetY);
 						

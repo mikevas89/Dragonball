@@ -52,7 +52,7 @@ public class BattlefieldSender implements Runnable, java.io.Serializable {
 					continue;
 				}
 				
-				System.out.println("Server: Battlefield sent");
+				//System.out.println("Server: Battlefield sent");
 
 				try {
 					clientComm.onMessageReceived(sendBattlefieldMessage);
