@@ -106,8 +106,17 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		Node client=new Node(message.getSender(),message.getSenderIP());
 		ClientPlayerInfo result = Server.getClientList().get(client);
 		if(result==null) return; //client is not player in my database
+		long testTimestamp = result.getTimeLastPingSent();
+		System.out.println("Timestamp last Ping:"+ testTimestamp);
+		//settings for the communication maintenance
 		result.setTimeLastPingSent(System.nanoTime());
+		result.setServerHasSentPingForCheckingClient(false);
+		result.setRegularCommunicationFromClient(true);
 		Server.getClientList().replace(client, result);
+		ClientPlayerInfo testEntry = Server.getClientList().get(client);
+		System.out.println("Timestamp current Ping:"+ testEntry.getTimeLastPingSent() + " diff: "+ (testEntry.getTimeLastPingSent() 
+																								-testTimestamp) );
+		
 	}
 	
 	public void onSubscribe2ServerMessageReceived(Message message){

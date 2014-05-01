@@ -150,6 +150,16 @@ public class PingMonitorSender implements Runnable{
 						serverInfoForRemovedServer.getServerID() == Server.getMyInfo().getServerID()-1){
 					Server.setRunDragons(true);
 					Server.getMyInfo().setRunsDragons(true);
+					//change serverOwnerID of dragons
+					synchronized (Server.lock) {
+						Iterator<Unit> it = Server.getBattlefield().getUnits().listIterator();
+						while (it.hasNext()) {
+							Unit unit = it.next();
+							if(unit instanceof Dragon) {
+								unit.setServerOwnerID(Server.getMyInfo().getServerID());
+							}
+						}
+					}
 				}
 
 				Server.getServerList().replace(this.getReferencedNode(),

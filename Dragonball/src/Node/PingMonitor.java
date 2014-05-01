@@ -35,20 +35,20 @@ public class PingMonitor implements Runnable{
 			// checks the Server2Server Connections according to the update of Ping messages
 			for(Iterator<Entry<Node, ServerInfo>> it= Server.getServerList().entrySet().iterator();it.hasNext();){
 				Entry<Node, ServerInfo> entry = it.next();
-				
+				long currentTime = System.nanoTime();
 			//	System.out.println("Ping Checking: CurrentTime:"+ System.nanoTime() 
 		//							+ " NodePing:"+ entry.getValue().getRemoteNodeTimeLastPingSent()+
 			//						" Difference:"+ (System.nanoTime() - entry.getValue().getRemoteNodeTimeLastPingSent()) +
 				//					"2*PingPeriod:"+ 2* Constants.SERVER2SERVER_PING_PERIOD);
 				//regular communication
-				if((System.nanoTime() - entry.getValue().getRemoteNodeTimeLastPingSent()) < (2* Constants.SERVER2SERVER_PING_PERIOD
+				if((currentTime - entry.getValue().getRemoteNodeTimeLastPingSent()) < (2* Constants.SERVER2SERVER_PING_PERIOD
 																										*Constants.NANO)){
 					System.out.println("No worries");
 					continue;
 				}
 				//broadcast "ProblematicServer" message to all servers except the problematic one 
-				if((System.nanoTime() - entry.getValue().getRemoteNodeTimeLastPingSent()) < Constants.SERVER2SERVER_TIMEOUT && 
-																!entry.getValue().isProblematicServer()){
+				if(((currentTime - entry.getValue().getRemoteNodeTimeLastPingSent()) < Constants.SERVER2SERVER_TIMEOUT*Constants.NANO)
+																						&& 	!entry.getValue().isProblematicServer()){
 					System.err.println("Problematic Server: "+ entry.getKey().getName());
 					Runnable pingMonitorSender=new PingMonitorSender(entry.getKey(),MessageType.ProblematicServer,
 																	PingMonitorSender.DecisionType.Undefined);
@@ -71,11 +71,12 @@ public class PingMonitor implements Runnable{
 			
 			for(Iterator<Entry<Node, ClientPlayerInfo>> it= Server.getClientList().entrySet().iterator();it.hasNext();){
 				Entry<Node, ClientPlayerInfo> entry = it.next();
+				long currentTime = System.nanoTime();
 				//regular communication 
-				if((System.nanoTime() - entry.getValue().getTimeLastPingSent()) < Constants.CLIENT2SERVER_PING_PERIOD*Constants.NANO)
+				if((currentTime - entry.getValue().getTimeLastPingSent()) < Constants.CLIENT2SERVER_PING_PERIOD*Constants.NANO)
 					continue;
 				
-				if((System.nanoTime() - entry.getValue().getTimeLastPingSent()) < (2* Constants.CLIENT2SERVER_PING_PERIOD*Constants.NANO) &&
+				if((currentTime - entry.getValue().getTimeLastPingSent()) < (2* Constants.CLIENT2SERVER_PING_PERIOD*Constants.NANO) &&
 						!entry.getValue().isServerHasSentPingForCheckingClient()){
 					
 					Runnable pingMonitorSender=new PingMonitorSender(entry.getKey(),MessageType.ServerClientPing,
@@ -90,7 +91,7 @@ public class PingMonitor implements Runnable{
 					continue;
 				}
 				
-				if((System.nanoTime() - entry.getValue().getTimeLastPingSent()) >= Constants.SERVER2CLIENT_TIMEOUT*Constants.NANO){
+				if((currentTime - entry.getValue().getTimeLastPingSent()) >= Constants.SERVER2CLIENT_TIMEOUT*Constants.NANO){
 					Unit clientUnit = Server.getBattlefield().getUnitByUnitID(entry.getValue().getUnitID());
 					System.out.println("Ping Monitor will unsubscribe client "+ entry.getKey().getName()+
 							" diff:"+(System.nanoTime() - entry.getValue().getTimeLastPingSent())+

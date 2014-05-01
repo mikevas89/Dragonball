@@ -107,7 +107,7 @@ public class UnSubscribeMessageSender implements Runnable{
 			//e.printStackTrace();
 		}
 		
-		//TODO check if that client was the last one
+		//server checks if that client was the last one
 		Server.getMyInfo().setNumClients(Server.getMyInfo().getNumClients()-1);
 		if(Server.getMyInfo().getNumClients()>0)
 			return;

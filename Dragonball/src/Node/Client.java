@@ -77,7 +77,8 @@ public class Client extends Node{
 		
 		int numClient = this.getUniqueIdForName("Clientid.txt");
 		//unique name of Client
-		this.setName("danteClient"+ String.valueOf(numClient));
+		this.setName("Client"+ String.valueOf(numClient));
+		this.setIP("192.168.1.14");
 		System.out.println("Client Name: "+ this.getName());
 		this.isSubscribed=false;
 		
@@ -123,15 +124,7 @@ public class Client extends Node{
 				new BattleFieldViewer(battlefield);
 				System.out.println("Client: BattleField size after going to Viewer");
 				Client.getBattleField().printUnitSize();
-				
-				InetAddress clientIP = null;
-				try {
-					clientIP = InetAddress.getLocalHost();
-				} catch (UnknownHostException e) {
-					e.printStackTrace();
-				}
-				
-				client.setIP(clientIP.getHostAddress());
+
 				
 				//create Client's RMI
 				ClientRMI commClient = null;
@@ -198,10 +191,12 @@ public class Client extends Node{
 						if(serverInfo ==null)
 							System.err.println("ServerInfo is null");
 							//no response from the connected Server
-							if(System.nanoTime() - serverInfo.getRemoteNodeTimeLastPingSent() > 2* Constants.SERVER2CLIENT_TIMEOUT){
-								client.serverTimeoutTimer.cancel();
-								client.running=false;
-							}
+						if((System.nanoTime() - serverInfo.getRemoteNodeTimeLastPingSent()) > 2* Constants.SERVER2CLIENT_TIMEOUT
+																									*Constants.NANO){
+							System.err.println("Client Removes Server due to Ping");
+							client.serverTimeoutTimer.cancel();
+							client.running=false;
+						}
 						
 						
 						// Randomly choose one of the four wind directions to move to if there are no units present
@@ -464,6 +459,7 @@ public class Client extends Node{
 		//send the subscription message to the server
 		ClientServer serverComm = null;
 		serverComm = Client.getServerReg(this.serverConnected);
+		System.out.println("Client sends Ping");
 
 		try {
 			serverComm.onMessageReceived(pingMessage);
@@ -562,7 +558,7 @@ public class Client extends Node{
 	
 	public void onBattleFieldMessageReceived(ClientServerMessage message){
 		if(message.getSender().equals(this.serverConnected.getName())){
-			System.out.println("C2 "+System.nanoTime()+" BattleFiled updated from the Server ");
+			System.out.println("C2 "+System.nanoTime()+" BattleField updated from the Server ");
 			//update the battlefield of the subscribed client
 			this.recomputeBattleField(message.getBattlefield());
 			

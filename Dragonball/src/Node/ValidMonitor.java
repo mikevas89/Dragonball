@@ -130,26 +130,9 @@ public class ValidMonitor implements Runnable{
 			
 			Runnable validActionSender = new ValidActionSender(newAction);
 			new Thread(validActionSender).start();
-						
 			
-			Unit targetUnit= Server.getBattlefield().getUnitByUnitID(newAction.getTargetUnitID());
-			if(((targetUnit instanceof Player) || (targetUnit instanceof Dragon)) && (targetUnit.getHitPoints()<=0)){
-				System.err.println("Valid Monitor went to unsubscribed");
-				Runnable messageSender = new UnSubscribeMessageSender(this.getPendingActions(),targetUnit);
-				new Thread(messageSender).start();
-				LogInfo playerDown = new LogInfo(Action.Removed,targetUnit.getUnitID(), targetUnit.getX(),targetUnit.getY(),
-													targetUnit.getType(targetUnit.getX(),targetUnit.getY()),
-													targetUnit.getUnitID(), 
-													targetUnit.getX(),targetUnit.getY(),
-													targetUnit.getType(targetUnit.getX(),targetUnit.getY()),
-													System.nanoTime(), Server.getMyInfo().getName());
-				this.validActions.add(playerDown);
-				
-				Runnable validActionPlayerDownSender = new ValidActionSender(playerDown);
-				new Thread(validActionPlayerDownSender).start();
-			}
-			
-			
+			//server checks for removal
+			Server.checkIfUnitIsDead(newAction);
 		}
 	}
 

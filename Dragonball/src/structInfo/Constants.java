@@ -9,7 +9,7 @@ public class Constants {
 	public static final int NODES_PER_IP=3;
 	public static final int NUM_NODES=NUM_IPS*NODES_PER_IP;
 	
-	public static final int MAX_CLIENTS_PER_SERVER=5;
+	public static final int MAX_CLIENTS_PER_SERVER=50;
 	
 	public static final int SERVER_CLIENT_RMI_PORT=1100;
 	public static final int SERVER_SERVER_RMI_PORT=1099;

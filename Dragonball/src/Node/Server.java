@@ -360,25 +360,7 @@ public class Server extends Node implements java.io.Serializable{
 		}
 	}
 	
-/*	
-	public void createServerClientReg(Node node, Server2ClientRMI comm) {  //server creates its Registry entry
-		
-		Registry serverRegistry = null;
-		try {
-			serverRegistry = LocateRegistry.createRegistry(Constants.SERVER_CLIENT_RMI_PORT);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
-		try {
-			serverRegistry.bind(this.getName(), comm );
-		} catch (RemoteException | AlreadyBoundException e) {
-			e.printStackTrace();
-		} //server's name
-		System.out.println(this.getName()+ " is up and running for Server/Client Com!");
-	}
-	
-	*/
-	
+
 	
 	public int createPlayer(){
 		int x,y;
@@ -396,6 +378,30 @@ public class Server extends Node implements java.io.Serializable{
 		//return unique Unit's serverID+unitID
 		return player.getUnitID();
 
+	}
+	
+	public static void checkIfUnitIsDead(LogInfo action){
+		//only if the unit belongs to this server
+		Unit targetUnit= Server.getBattlefield().getUnitByUnitID(action.getTargetUnitID());
+		
+		//only if the unit belongs to this server
+		if(targetUnit.getServerOwnerID()!=Server.getMyInfo().getServerID())
+			return;
+		if(((targetUnit instanceof Player) || (targetUnit instanceof Dragon)) && (targetUnit.getHitPoints()<=0)){
+			System.err.println("Checker went to unsubscribed");
+			Runnable messageSender = new UnSubscribeMessageSender(Server.getPendingActions(),targetUnit);
+			new Thread(messageSender).start();
+			LogInfo playerDown = new LogInfo(Action.Removed,targetUnit.getUnitID(), targetUnit.getX(),targetUnit.getY(),
+												targetUnit.getType(targetUnit.getX(),targetUnit.getY()),
+												targetUnit.getUnitID(), 
+												targetUnit.getX(),targetUnit.getY(),
+												targetUnit.getType(targetUnit.getX(),targetUnit.getY()),
+												System.nanoTime(), Server.getMyInfo().getName());
+			Server.getValidActions().add(playerDown);
+			
+			Runnable validActionPlayerDownSender = new ValidActionSender(playerDown);
+			new Thread(validActionPlayerDownSender).start();
+		}
 	}
 	
 
@@ -683,6 +689,16 @@ public class Server extends Node implements java.io.Serializable{
 						serverInfoForRemovedServer.getServerID() == Server.getMyInfo().getServerID()-1){
 					Server.setRunDragons(true);
 					Server.getMyInfo().setRunsDragons(true);
+					//change serverOwnerID of dragons
+					synchronized (Server.lock) {
+						Iterator<Unit> it = Server.getBattlefield().getUnits().listIterator();
+						while (it.hasNext()) {
+							Unit unit = it.next();
+							if(unit instanceof Dragon) {
+								unit.setServerOwnerID(Server.getMyInfo().getServerID());
+							}
+						}
+					}
 				}
 
 				Server.getServerList().replace(serverToRemove,new ServerInfo(serverInfoForRemovedServer

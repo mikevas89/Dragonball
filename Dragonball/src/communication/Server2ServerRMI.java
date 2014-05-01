@@ -250,15 +250,21 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		System.out.println("SS4 "+currentTime+" "+(currentTime - message.getActionToBeChecked().getTimestamp())+" "+totalNumClients );
 		LogInfo newRemoteAction = message.getActionToBeChecked();
 		
-		//Removed Action was received
-		if(newRemoteAction.getAction().equals(Action.Removed)){
-			ListIterator<Unit> it =Server.getBattlefield().getUnits().listIterator();
-	 		while(it.hasNext()){ 
-				Unit unit = it.next();
-				if(unit.getUnitID() == newRemoteAction.getSenderUnitID()){
-					Server.getBattlefield().removeUnit(unit.getX(), unit.getY(), it);
-					Server.getValidActions().add(newRemoteAction);
-					return;
+		
+		// Removed Action was received
+		synchronized (Server.lock) {
+			if (newRemoteAction.getAction().equals(Action.Removed)) {
+				ListIterator<Unit> it = Server.getBattlefield().getUnits()
+						.listIterator();
+				while (it.hasNext()) {
+					Unit unit = it.next();
+					if (unit.getUnitID() == newRemoteAction.getSenderUnitID()) {
+						Server.getBattlefield().removeUnit(unit.getX(),
+								unit.getY(), it);
+						//put action to the local log file
+						Server.getValidActions().add(newRemoteAction);
+						return;
+					}
 				}
 			}
 		}
@@ -292,7 +298,8 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 	    	Unit dragonUnit = Server.getBattlefield().getUnit(newRemoteAction.getSenderX(),newRemoteAction.getSenderY());
 	    	Unit targetUnit = Server.getBattlefield().getUnit(newRemoteAction.getTargetX(),newRemoteAction.getTargetY());
 	    	Server.getBattlefield().dealDamage(targetUnit.getX(), targetUnit.getY(), dragonUnit.getAttackPoints());
-	    	
+	    	//check if the targetUnit is mine and perhaps wants removal
+	    	Server.checkIfUnitIsDead(newRemoteAction);
 	    	Server.getValidActions().add(newRemoteAction);
 	    }
 	    else {//senderType is Player
@@ -316,6 +323,8 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 				Server.getBattlefield().dealDamage(newRemoteAction.getTargetX(),
 						newRemoteAction.getTargetY(),
 						senderUnit.getAttackPoints());
+				//check if this server handles the dragons and remove him if dead
+		    	Server.checkIfUnitIsDead(newRemoteAction);
 				break;
 			}
 			// logs the new Valid Action
