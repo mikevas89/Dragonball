@@ -64,9 +64,9 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		message.setTimeIssuedFromServer(System.nanoTime());
 		ServerServerMessage serverServerMessage = (ServerServerMessage) message;
 
-		System.out.println("Server: Received Message from "
-				+ message.getSender() + " to " + message.getReceiver()
-				+ " Time: " + message.getTimeIssuedFromServer());
+		//System.out.println("Server: Received Message from "
+	//			+ message.getSender() + " to " + message.getReceiver()
+	//			+ " Time: " + message.getTimeIssuedFromServer());
 
 		switch (message.getMessageTypeRequest()) {
 		case ServerServerPing:
@@ -117,7 +117,8 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 
 
 	private void onPendingMoveInvalidMessageReceived(ServerServerMessage message) {
-		System.out.println("SS3 "+System.nanoTime()+" onPendingMoveInvalidMessageReceived");
+		System.out.println("SS3 "+System.nanoTime());
+		System.out.println("onPendingMoveInvalidMessageReceived");
 		Map<String, LogInfo> pendingLog = Server.getPendingActions();
 		//iterate and remove the pending invalid move
 		for(Iterator<Entry<String, LogInfo>> it= pendingLog.entrySet().iterator();it.hasNext();){
@@ -223,7 +224,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 			e.printStackTrace();
 		 }
 		
-		 System.out.println("SS7 "+System.nanoTime()+" Server: ACK sent to Server"+ serverSender.getName()+ "serverID: "+ serverInfo.getServerID());
+		 System.out.println("SS7 "+System.nanoTime());
 		
 	}
 	
@@ -236,18 +237,15 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		int playerServerOwnerID = Integer.valueOf(message.getContent().get("serverOwnerID"));
 		//create player to battlefield from other Server
 		Player newPlayer = new Player(playerX, playerY,Server.getBattlefield(), playerUnitID,playerServerOwnerID);
+		System.out.println("SS15 onNewPlayerMessageReceived");
 	}
 	
 	
 	
 
 	private void onSendValidActionMessageReceived(ServerServerMessage message) {
-		long currentTime = System.nanoTime();
-		int totalNumClients = Server.getMyInfo().getNumClients();
-		for(ServerInfo serverInfo: Server.getServerList().values()){
-			totalNumClients+=serverInfo.getNumClients();
-		}
-		System.out.println("SS4 "+currentTime+" "+(currentTime - message.getActionToBeChecked().getTimestamp())+" "+totalNumClients );
+		
+
 		LogInfo newRemoteAction = message.getActionToBeChecked();
 		
 		
@@ -263,6 +261,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 								unit.getY(), it);
 						//put action to the local log file
 						Server.getValidActions().add(newRemoteAction);
+						this.printResponseTime(message);
 						return;
 					}
 				}
@@ -291,6 +290,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 						//broadcast the checkpoint battlefield to all
 						Runnable checkPointMessage = new CheckPointMessageSender();
 						new Thread(checkPointMessage).start();
+					    printResponseTime(message);
 						return;
 	    }
 	    
@@ -330,9 +330,20 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 			// logs the new Valid Action
 			Server.getValidActions().add(newRemoteAction);
 	    }
+	    printResponseTime(message);
 
 	}
 	
+
+	private void printResponseTime(ServerServerMessage message) {
+		int totalNumClients = Server.getMyInfo().getNumClients();
+		for(ServerInfo serverInfo: Server.getServerList().values()){
+			totalNumClients+=serverInfo.getNumClients();
+		}
+		long responseTime = System.nanoTime() - message.getTimeIssuedFromServer();
+		long responseTimeFromOtherServer = Long.parseLong(message.getContent().get("responseTime"));
+		System.out.println("SS4 "+responseTime+responseTimeFromOtherServer+" "+totalNumClients );
+	}
 
 	private void onNewCheckPointMessageReceived(ServerServerMessage message) {
 		System.out.println("onNewCheckPointMessageReceived");
@@ -392,7 +403,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 	
 
 	private void onResponseProblematicServerMessageReceived(ServerServerMessage message) {
-		System.out.println("SS6 "+System.nanoTime()+" MESSAGE" );
+		System.out.println("SS6 "+System.nanoTime());
 		System.out.println("onResponseProblematicServerMessageReceived");
 		Node problematicServer = message.getProblematicServerToCheck();
 		ServerInfo serverInfo = Server.getServerList().get(problematicServer);
@@ -480,12 +491,12 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 			//e.printStackTrace();
 		 }
 		
-		 System.out.println("SS2 "+System.nanoTime()+" Server: PendingMoveInvalid sent to Server"+ message.getSender()+ "serverIP: "+ message.getSender());
+		 System.out.println("SS2 "+System.nanoTime());
 	}
 
 	private void onServerServerPingMessageReceived(ServerServerMessage message) {
-		System.out.println("SS1 "+System.nanoTime()+" onServerServerPingMessageReceived");
-		System.out.println("onServerServerPingMessageReceived");
+		System.out.println("SS1 "+System.nanoTime());
+		//System.out.println("onServerServerPingMessageReceived");
 		
 		Node server = new Node(message.getSender(), message.getSenderIP());
 		ServerInfo serverInfo = Server.getServerList().get(server);

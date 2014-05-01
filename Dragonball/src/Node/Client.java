@@ -38,22 +38,7 @@ import messages.ClientServerMessage;
 import messages.MessageType;
 
 public class Client extends Node{
-	
-	/*TODO:  //Client and Server have different implementation of the ClientServerInterface
-	 * 
-	 * 		Messages that client sends
-	 * 		1. Client sends Ping Message before ClientTimeout - Y
-			2. Un/ Subsribe to a server  - Y
-			3. moveMyUnit message - Y
-			4. get BattlefieldViewer - Y
-			
-			Messages received from client/ sent from Server
-			1. get BattlefieldViewer - Y
-			1.5 get uniqueId created by server - Y
-			3. a message saying "send a Ping to Server because ClientTimeout is about to expire - N (client has timer for this)
-			4. redirect client to this server(sender of the message is a second server) - Y
-	*/
-	
+
 	
 	private Node serverConnected; //server whom Client is connected
 	private boolean isSubscribed; //if client is subscribed to a server
@@ -121,9 +106,9 @@ public class Client extends Node{
 
 				
 		 		//battlefield = BattleField.getBattleField();
-				new BattleFieldViewer(battlefield);
-				System.out.println("Client: BattleField size after going to Viewer");
-				Client.getBattleField().printUnitSize();
+				//new BattleFieldViewer(battlefield);
+				//System.out.println("Client: BattleField size after going to Viewer");
+				//Client.getBattleField().printUnitSize();
 
 				
 				//create Client's RMI
@@ -174,7 +159,8 @@ public class Client extends Node{
 				} catch (RemoteException | NotBoundException e) {
 					//e.printStackTrace();
 				}
-				
+				int prevX=0;
+				int prevY=0;
 				System.out.println("Client is waiting");
 				while(client.running){
 					try {
@@ -183,7 +169,7 @@ public class Client extends Node{
 							Thread.sleep(Constants.CLIENT_CHECKING_ISSUBSCRIBED);
 						}
 					
-						Client.printlist();
+				//		Client.printlist();
 						
 						Thread.sleep(Constants.PLAYER_PERIOD_ACTION);
 						System.out.println("Connected serverName:"+ client.getServerConnected().getName());
@@ -202,6 +188,8 @@ public class Client extends Node{
 						// Randomly choose one of the four wind directions to move to if there are no units present
 						direction = Directions.values()[ (int)(Directions.values().length * Math.random()) ];
 						adjacentUnitType = UnitType.undefined;
+						targetX=0;
+						targetY=0;
 						
 						Unit myUnit= client.getUnitFromBattleFieldList();
 						if(myUnit == null && client.running==true)
@@ -245,6 +233,8 @@ public class Client extends Node{
 								targetY = myUnit.getY();
 								break;
 						}
+						if(targetX == prevX && targetY == prevY)
+							System.err.println("CLIENT WILL HEAL HIMSELF/ previous was in X: "+prevX+ " Y: "+prevY);
 						
 						Unit targetUnit=Client.getBattleField().getUnit(targetX, targetY);
 						
@@ -252,7 +242,8 @@ public class Client extends Node{
 						if(targetUnit!=null && targetUnit.getHitPoints()==targetUnit.getMaxHitPoints())
 							continue;
 						
-						
+						prevX=targetX;
+						prevY=targetY;
 						ClientServerMessage actionMessage = new ClientServerMessage(
 								MessageType.Action, client.getName(),
 								client.getIP(), server.getName(), server
@@ -363,7 +354,7 @@ public class Client extends Node{
 			return null;
 		}		//getServerInfo returns from ServerList
 																//serverIp and serverName
-		System.out.println("getServerReg to "+ server.getName());
+		//System.out.println("getServerReg to "+ server.getName());
 		return serverCommunication;
 	}
 	
@@ -459,7 +450,7 @@ public class Client extends Node{
 		//send the subscription message to the server
 		ClientServer serverComm = null;
 		serverComm = Client.getServerReg(this.serverConnected);
-		System.out.println("Client sends Ping");
+		//System.out.println("Client sends Ping");
 
 		try {
 			serverComm.onMessageReceived(pingMessage);
@@ -558,7 +549,8 @@ public class Client extends Node{
 	
 	public void onBattleFieldMessageReceived(ClientServerMessage message){
 		if(message.getSender().equals(this.serverConnected.getName())){
-			System.out.println("C2 "+System.nanoTime()+" BattleField updated from the Server ");
+			System.out.println("C2 "+System.nanoTime());
+			//System.out.println(" BattleField updated from the Server ");
 			//update the battlefield of the subscribed client
 			this.recomputeBattleField(message.getBattlefield());
 			
@@ -576,7 +568,8 @@ public class Client extends Node{
 
 	public void onServerClientPingMessageReceived(ClientServerMessage message) {
 		if(message.getSender().equals(this.serverConnected.getName())){
-			System.out.println("C3 "+System.nanoTime()+" onServerClientPingMessageReceived");
+			System.out.println("C3 "+System.nanoTime());
+			System.out.println(" onServerClientPingMessageReceived");
 			//send immediately to Server because the connection is at stake
 			new Thread(new Runnable(){
 				@Override
@@ -605,7 +598,7 @@ public class Client extends Node{
 	public void onUnSubscribeFromServerMessageReceived(ClientServerMessage message) {
 		if(message.getSender().equals(this.serverConnected.getName())){
 			System.out.println("C1 "+System.nanoTime()+" Client: onUnSubscribeFromServerMessageReceived");
-			this.recomputeBattleField(message.getBattlefield());
+			//this.recomputeBattleField(message.getBattlefield());
 			this.running=false;	
 			serverTimeoutTimer.cancel();
 		}

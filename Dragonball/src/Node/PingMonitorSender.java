@@ -118,6 +118,7 @@ public class PingMonitorSender implements Runnable{
 			if (Server.getNumAliveServers() - Server.getNumProblematicServers() == 1) {
 				System.out.println("PingMonitorSender: Server:"+Server.getMyInfo().getName()
 									+ " REMOVE server "+ this.getReferencedNode().getName());
+				System.out.println("SSD "+ System.nanoTime());
 				// remove the current info for the server decided to remove
 				ServerInfo serverInfoForRemovedServer = Server.getServerList()
 						.get(this.getReferencedNode());

@@ -17,6 +17,7 @@ public class ClientServerMessage extends Message implements Serializable{
 	public ClientServerMessage(){
 		super();
 		this.battlefield=BattleField.getBattleField();
+		System.out.println("NMCS "+ System.nanoTime());
 	}
 	
 	public ClientServerMessage(MessageType messageRequest, String sender,String senderIP,String receiver,String receiverIP){

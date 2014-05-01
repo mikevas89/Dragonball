@@ -38,6 +38,7 @@ public class ServerServerMessage extends Message implements Serializable{
 		super(messageRequest, sender, senderIP, receiver, receiverIP);
 		this.battlefield=BattleField.getBattleField();
 		this.validActionsLog = new ArrayList<LogInfo>();
+		System.out.println("NMSS "+ System.nanoTime());
 	}
 	
 	

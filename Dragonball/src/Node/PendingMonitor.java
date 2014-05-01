@@ -49,7 +49,7 @@ public class PendingMonitor implements Runnable {
 				    long curtime = System.nanoTime();
 				    if((curtime - action.getTimestamp()) > Constants.PENDING_TIMEOUT*Constants.NANO)
 				    {
-				    	System.out.println("Pending -> VALID action: " + action.toString());
+				    	//System.out.println("Pending -> VALID action: " + action.toString());
 				    	try {
 							this.validBlockQueue.put(action);
 						} catch (InterruptedException e) {

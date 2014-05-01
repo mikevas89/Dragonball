@@ -36,11 +36,13 @@ public class ValidActionSender implements Runnable {
 									Server.getMyInfo().getIP(),
 									serverInfo.getName(),
 									serverInfo.getIP());
-			 sendValidAction.setActionToBeChecked(this.actionToBeSent);
 			 
 			//sending the PendingInvalid message to subscribed client
 			 ServerServer serverRMI=null;
 			 serverRMI = Server.getServerReg(new Node(serverInfo.getName(),serverInfo.getIP()));
+			 
+			 sendValidAction.setActionToBeChecked(this.actionToBeSent);
+			 sendValidAction.setContent("responseTime", String.valueOf(System.nanoTime()-this.actionToBeSent.getTimestamp()));
 			 
 			 if(serverRMI == null) return;
 			

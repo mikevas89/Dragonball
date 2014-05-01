@@ -33,7 +33,7 @@ public class ValidMonitor implements Runnable{
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			System.out.println("ValidMonitor : ActionToValid-> "+ newAction.toString());
+			System.out.println("ValidMonitor :-> "+ newAction.toString());
 			synchronized (Server.lock) {
 				// A Removed Action has received from other Server
 				if (newAction.getAction().equals(Action.Removed)) {
@@ -126,7 +126,7 @@ public class ValidMonitor implements Runnable{
 			Create thread for sending Valid Action
 			----------------------------------------------------		
 			 */
-			System.err.println(Server.getMyInfo().getName()+": sends Valid Action - on Valid Monitor");
+		//	System.err.println(Server.getMyInfo().getName()+": sends Valid Action - on Valid Monitor");
 			
 			Runnable validActionSender = new ValidActionSender(newAction);
 			new Thread(validActionSender).start();

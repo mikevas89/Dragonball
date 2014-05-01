@@ -601,7 +601,7 @@ public class Server extends Node implements java.io.Serializable{
 			return null;
 		}
 																//clientIp and clientName
-		System.out.println("Getting Registry from "+ client.getName());
+		//System.out.println("Getting Registry from "+ client.getName());
 		return clientCommunication;
 	}
 	
@@ -626,7 +626,7 @@ public class Server extends Node implements java.io.Serializable{
 			return null;
 		}		//getServerInfo returns from ServerList
 																//serverIp and serverName
-		System.out.println("getServerReg to "+ server.getName());
+		//System.out.println("getServerReg to "+ server.getName());
 		return serverCommunication;
 	}
 	
@@ -654,6 +654,7 @@ public class Server extends Node implements java.io.Serializable{
 					Server.getMyInfo().setRunsGame(false);
 					Server.getPendingActions().clear();
 					Server.getValidBlockQueue().clear();
+					System.out.println("SSD "+ System.nanoTime());
 					Server.killServer=true;
 					return;
 				}
@@ -709,6 +710,7 @@ public class Server extends Node implements java.io.Serializable{
 										.getServerID(), false));
 
 				System.err.println(Server.getMyInfo().getName()+ " : REMOVE SERVER : " + serverToRemove.getName());
+				System.out.println("SSD "+ System.nanoTime());
 				Server.printlist();
 	}
 		

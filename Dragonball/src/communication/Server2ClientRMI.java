@@ -54,7 +54,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		message.setTimeIssuedFromServer(System.nanoTime());
 		ClientServerMessage clientServerMessage= (ClientServerMessage) message;
 		
-		System.out.println("Server: Received Message");
+		//System.out.println("Server: Received Message");
 		
 		switch(message.getMessageTypeRequest()){
 		case ClientServerPing : 
@@ -102,12 +102,13 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 	*/
 	
 	private void onClientServerPingMessageReceived(Message message) {
-		System.out.println("SC1 "+System.nanoTime()+" onClientServerPingMessageReceived");
+		System.out.println("SC1 "+System.nanoTime());
+		//System.out.println("onClientServerPingMessageReceived");
 		Node client=new Node(message.getSender(),message.getSenderIP());
 		ClientPlayerInfo result = Server.getClientList().get(client);
 		if(result==null) return; //client is not player in my database
 		long testTimestamp = result.getTimeLastPingSent();
-		System.out.println("Timestamp last Ping:"+ testTimestamp);
+		//System.out.println("Timestamp last Ping:"+ testTimestamp);
 		//settings for the communication maintenance
 		result.setTimeLastPingSent(System.nanoTime());
 		result.setServerHasSentPingForCheckingClient(false);
@@ -121,7 +122,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 	
 	public void onSubscribe2ServerMessageReceived(Message message){
 		
-		System.out.println("SC2 "+System.nanoTime()+" Server: onSubscribe2ServerMessageReceived");
+
 		
 		Node client=new Node(message.getSender(),message.getSenderIP());
 		//checking if client is already subscribed
@@ -302,6 +303,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 			//e.printStackTrace();
 		}
 		
+		System.out.println("SC2 "+System.nanoTime()+" Server: onSubscribe2ServerMessageReceived");
 		System.out.println("Server: ACK sent to Client"+ client.getName()+ "unitID: "+ newClient.getUnitID());
 		 
 	}

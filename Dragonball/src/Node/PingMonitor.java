@@ -43,7 +43,7 @@ public class PingMonitor implements Runnable{
 				//regular communication
 				if((currentTime - entry.getValue().getRemoteNodeTimeLastPingSent()) < (2* Constants.SERVER2SERVER_PING_PERIOD
 																										*Constants.NANO)){
-					System.out.println("No worries");
+					//System.out.println("No worries");
 					continue;
 				}
 				//broadcast "ProblematicServer" message to all servers except the problematic one 
