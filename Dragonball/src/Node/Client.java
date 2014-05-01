@@ -198,6 +198,8 @@ public class Client extends Node{
 						int foundplayer=0;
 						for(Unit temp: neighbors)
 						{
+							if(temp==null)
+								continue;
 							if(temp.getType(temp.getX(), temp.getY()).equals(UnitType.player)){
 									if(temp.getHitPoints() < temp.getMaxHitPoints()/2){
 										targetX=temp.getX();
@@ -212,10 +214,13 @@ public class Client extends Node{
 						if(foundplayer!=1){
 							for(Unit temp: neighbors)
 							{
+								if(temp==null)
+									continue;
 								if(temp.getType(temp.getX(), temp.getY()).equals(UnitType.dragon)){
 									targetX=temp.getX();
 									targetY=temp.getY();
 									founddragon=1;
+									System.err.println("FIGHTING A DRAGON!!!!!!!");
 									break;
 								}
 								
@@ -285,7 +290,7 @@ public class Client extends Node{
 						Unit targetUnit=Client.getBattleField().getUnit(targetX, targetY);
 						
 						//player shouldn't heal one player with full health
-						if(targetUnit!=null && targetUnit.getHitPoints()==targetUnit.getMaxHitPoints())
+						if(targetUnit!=null && targetUnit.getHitPoints()==targetUnit.getMaxHitPoints() && (targetUnit instanceof Player))
 							continue;
 						
 						prevX=targetX;

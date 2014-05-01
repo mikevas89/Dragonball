@@ -17,7 +17,7 @@ public class Constants {
 	public static final long NANO=1000000;
 	
 	//action periods for the players
-	public static final long PLAYER_PERIOD_ACTION= 12000;
+	public static final long PLAYER_PERIOD_ACTION= 2000;
 	//Server BattleFieldSender
 	public static final long BROADCAST_BATTLEFIELD_PERIOD_TO_CLIENTS = PLAYER_PERIOD_ACTION/2;
 	
@@ -29,7 +29,7 @@ public class Constants {
 	//client subscription
 	public static final long CLIENT_CHECKING_ISSUBSCRIBED = 500;
 	//action periods for the dragons
-	public static final long DRAGON_PERIOD_ACTION= 2*PLAYER_PERIOD_ACTION + PENDING_TIMEOUT;
+	public static final long DRAGON_PERIOD_ACTION= PLAYER_PERIOD_ACTION + PENDING_TIMEOUT;
 	
 
 	

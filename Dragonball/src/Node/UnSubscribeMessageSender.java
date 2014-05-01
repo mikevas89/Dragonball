@@ -59,7 +59,8 @@ public class UnSubscribeMessageSender implements Runnable{
 			 		while(it.hasNext()){ 
 			 			Unit unit= it.next();
 			 			if (unit instanceof Player) continue;
-			 			Server.getBattlefield().removeUnit(unit.getX(), unit.getY(), it);
+			 			if(unit.getUnitID() == this.getUnit().getUnitID())
+			 				Server.getBattlefield().removeUnit(unit.getX(), unit.getY(), it);
 			 		}
 			 		return;
 		}

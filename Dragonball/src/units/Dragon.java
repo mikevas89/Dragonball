@@ -34,11 +34,11 @@ public class Dragon extends Unit implements Serializable {
 	public static final int MIN_TIME_BETWEEN_TURNS = 2;
 	public static final int MAX_TIME_BETWEEN_TURNS = 7;
 	// The minimum and maximum amount of hitpoints that a particular dragon starts with
-	public static final int MIN_HITPOINTS = 50;
-	public static final int MAX_HITPOINTS = 100;
+	public static final int MIN_HITPOINTS = 200;
+	public static final int MAX_HITPOINTS = 400;
 	// The minimum and maximum amount of hitpoints that a particular dragon has
-	public static final int MIN_ATTACKPOINTS = 5;
-	public static final int MAX_ATTACKPOINTS = 20;
+	public static final int MIN_ATTACKPOINTS = 1;
+	public static final int MAX_ATTACKPOINTS = 1;
 	
 	/**
 	 * Spawn a new dragon, initialize the 
@@ -64,75 +64,6 @@ public class Dragon extends Unit implements Serializable {
 
 		
 	
-	/**
-	 * Roleplay the dragon. Make the dragon act once a while,
-	 * only stopping when the dragon is actually dead or the 
-	 * program has halted.
-	 * 
-	 * It checks if an enemy is near and, if so, it attacks that
-	 * specific enemy.
-	 */
-	@SuppressWarnings("static-access")
-	public String call() {
-		ArrayList <Directions> adjacentPlayers = new ArrayList<Directions> ();
-		
-		this.running = true;
-		int turn=0;
-
-		while(GameState.getRunningState() && this.running) {
-			try {
-				// Sleep while the dragon is considering its next move 
-				Thread.currentThread().sleep((int)(Constants.CLIENT_PERIOD_ACTION));
-				turn++;
-				if(turn==5)
-					break;
-
-				// Stop if the dragon runs out of hitpoints 
-				if (getHitPoints() <= 0)
-					break;
-				// Decide what players are near
-				if (getY() > 0)
-					if ( getType( getX(), getY() - 1 ) == UnitType.player )
-						adjacentPlayers.add(Directions.up);
-				if (getY() < BattleField.MAP_WIDTH - 1)
-					if ( getType( getX(), getY() + 1 ) == UnitType.player )
-						adjacentPlayers.add(Directions.down);
-				if (getX() > 0)
-					if ( getType( getX() - 1, getY() ) == UnitType.player )
-						adjacentPlayers.add(Directions.left);
-				if (getX() < BattleField.MAP_WIDTH - 1)
-					if ( getType( getX() + 1, getY() ) == UnitType.player )
-						adjacentPlayers.add(Directions.right);
-				
-				// Pick a random player to attack
-				if (adjacentPlayers.size() == 0)
-					continue; // There are no players to attack
-				Directions playerToAttack = adjacentPlayers.get( (int)(Math.random() * adjacentPlayers.size()) );
-				
-				// Attack the player
-				switch (playerToAttack) {
-					case up:
-						this.battlefield.dealDamage( getX(), getY() - 1, this.getAttackPoints() );
-						break;
-					case right:
-						this.battlefield.dealDamage( getX() + 1, getY(), this.getAttackPoints() );
-						break;
-					case down:
-						this.battlefield.dealDamage( getX(), getY() + 1, this.getAttackPoints() );
-						break;
-					case left:
-						this.battlefield.dealDamage( getX() - 1, getY(), this.getAttackPoints() );
-						break;
-				}
-				
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		
-		return getX()+" "+getY();
-		
-		
-	}
+	
 
 }
