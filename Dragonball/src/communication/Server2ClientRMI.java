@@ -241,7 +241,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		//broadcast to Servers the New Player Subscription
 		for(ServerInfo serverInfo: Server.getServerList().values()){
 			if(!serverInfo.isRunsGame()) continue;
-			System.err.println(Server.getMyInfo().getName()+": sends New Player");
+			//System.err.println(Server.getMyInfo().getName()+": sends New Player");
 			
 			 ServerServerMessage sendCreatePlayer = new ServerServerMessage(
 									MessageType.NewPlayer,

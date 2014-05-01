@@ -63,7 +63,7 @@ public class Client extends Node{
 		int numClient = this.getUniqueIdForName("Clientid.txt");
 		//unique name of Client
 		this.setName("Client"+ String.valueOf(numClient));
-		this.setIP("192.168.1.14");
+		this.setIP("192.168.1.5");
 		System.out.println("Client Name: "+ this.getName());
 		this.isSubscribed=false;
 		
@@ -184,55 +184,101 @@ public class Client extends Node{
 							client.running=false;
 						}
 						
-						
-						// Randomly choose one of the four wind directions to move to if there are no units present
-						direction = Directions.values()[ (int)(Directions.values().length * Math.random()) ];
-						adjacentUnitType = UnitType.undefined;
-						targetX=0;
-						targetY=0;
-						
+						Unit neighbors[] = new Unit[4];
 						Unit myUnit= client.getUnitFromBattleFieldList();
-						if(myUnit == null && client.running==true)
+						if (myUnit.getY() > 0)
+							neighbors[0]= Client.getBattleField().getUnit(myUnit.getX(), myUnit.getY() - 1);
+						if (myUnit.getY() < BattleField.MAP_HEIGHT - 1)
+							neighbors[1]= Client.getBattleField().getUnit(myUnit.getX(), myUnit.getY() + 1);
+						if (myUnit.getX() > 0)
+							neighbors[2]= Client.getBattleField().getUnit(myUnit.getX()-1, myUnit.getY() );
+						if (myUnit.getX() < BattleField.MAP_WIDTH - 1)
+							neighbors[3]= Client.getBattleField().getUnit(myUnit.getX()+1, myUnit.getY() );
+
+						int foundplayer=0;
+						for(Unit temp: neighbors)
 						{
-							System.err.println("Client: Cannot find my player");
-							client.running=false;
-							continue;
+							if(temp.getType(temp.getX(), temp.getY()).equals(UnitType.player)){
+									if(temp.getHitPoints() < temp.getMaxHitPoints()/2){
+										targetX=temp.getX();
+										targetY=temp.getY();
+										foundplayer=1;
+										break;
+									}
+							}
+							
 						}
-						try{
-						switch (direction) {
-							case up:
-								if (myUnit.getY() <= 0)
-									// The player was at the edge of the map, so he can't move north and there are no units there
-									continue;
+						int founddragon=0;
+						if(foundplayer!=1){
+							for(Unit temp: neighbors)
+							{
+								if(temp.getType(temp.getX(), temp.getY()).equals(UnitType.dragon)){
+									targetX=temp.getX();
+									targetY=temp.getY();
+									founddragon=1;
+									break;
+								}
 								
-								targetX = myUnit.getX();
-								targetY = myUnit.getY() - 1;
-								break;
-							case down:
-								if (myUnit.getY() >= BattleField.MAP_HEIGHT - 1)
-									// The player was at the edge of the map, so he can't move south and there are no units there
-									continue;
-
-								targetX = myUnit.getX();
-								targetY = myUnit.getY() + 1;
-								break;
-							case left:
-								if (myUnit.getX() <= 0)
-									// The player was at the edge of the map, so he can't move west and there are no units there
-									continue;
-
-								targetX = myUnit.getX() - 1;
-								targetY = myUnit.getY();
-								break;
-							case right:
-								if (myUnit.getX() >= BattleField.MAP_WIDTH - 1)
-									// The player was at the edge of the map, so he can't move east and there are no units there
-									continue;
-
-								targetX = myUnit.getX() + 1;
-								targetY = myUnit.getY();
-								break;
+							}
 						}
+						
+						if(founddragon!=1 && foundplayer!=1){
+							// Randomly choose one of the four wind directions to move to if there are no units present
+							direction = Directions.values()[ (int)(Directions.values().length * Math.random()) ];
+							adjacentUnitType = UnitType.undefined;
+							targetX=0;
+							targetY=0;
+							myUnit= client.getUnitFromBattleFieldList();
+							if(myUnit == null && client.running==true)
+							{
+								System.err.println("Client: Cannot find my player");
+								client.running=false;
+								continue;
+							}
+							try{
+							switch (direction) {
+								case up:
+									if (myUnit.getY() <= 0)
+										// The player was at the edge of the map, so he can't move north and there are no units there
+										continue;
+									
+									targetX = myUnit.getX();
+									targetY = myUnit.getY() - 1;
+									break;
+								case down:
+									if (myUnit.getY() >= BattleField.MAP_HEIGHT - 1)
+										// The player was at the edge of the map, so he can't move south and there are no units there
+										continue;
+
+									targetX = myUnit.getX();
+									targetY = myUnit.getY() + 1;
+									break;
+								case left:
+									if (myUnit.getX() <= 0)
+										// The player was at the edge of the map, so he can't move west and there are no units there
+										continue;
+
+									targetX = myUnit.getX() - 1;
+									targetY = myUnit.getY();
+									break;
+								case right:
+									if (myUnit.getX() >= BattleField.MAP_WIDTH - 1)
+										// The player was at the edge of the map, so he can't move east and there are no units there
+										continue;
+
+									targetX = myUnit.getX() + 1;
+									targetY = myUnit.getY();
+									break;
+							}
+							
+							}catch(NullPointerException e){
+								client.running=false;
+								continue;
+							}
+							
+							
+						}
+					
 						if(targetX == prevX && targetY == prevY)
 							System.err.println("CLIENT WILL HEAL HIMSELF/ previous was in X: "+prevX+ " Y: "+prevY);
 						
@@ -259,10 +305,7 @@ public class Client extends Node{
 							e.printStackTrace();
 						}
 						
-					}catch(NullPointerException e){
-						client.running=false;
-						continue;
-					}
+					
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}

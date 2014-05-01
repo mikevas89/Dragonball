@@ -11,7 +11,7 @@ public class Constants {
 	
 	public static final int MAX_CLIENTS_PER_SERVER=50;
 	
-	public static final int SERVER_CLIENT_RMI_PORT=1100;
+	public static final int SERVER_CLIENT_RMI_PORT=1458;
 	public static final int SERVER_SERVER_RMI_PORT=1099;
 	
 	public static final long NANO=1000000;
@@ -29,7 +29,7 @@ public class Constants {
 	//client subscription
 	public static final long CLIENT_CHECKING_ISSUBSCRIBED = 500;
 	//action periods for the dragons
-	public static final long DRAGON_PERIOD_ACTION= PLAYER_PERIOD_ACTION + PENDING_TIMEOUT;
+	public static final long DRAGON_PERIOD_ACTION= 2*PLAYER_PERIOD_ACTION + PENDING_TIMEOUT;
 	
 
 	

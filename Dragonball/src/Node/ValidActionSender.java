@@ -28,7 +28,7 @@ public class ValidActionSender implements Runnable {
 	public void run() {
 		for(ServerInfo serverInfo: Server.getServerList().values()){
 			if(!serverInfo.isRunsGame()) continue;
-			System.err.println(Server.getMyInfo().getName()+": sends Valid Action - on ValidSender");
+			//System.err.println(Server.getMyInfo().getName()+": sends Valid Action - on ValidSender");
 			
 			 ServerServerMessage sendValidAction = new ServerServerMessage(
 									MessageType.NewValidAction,
