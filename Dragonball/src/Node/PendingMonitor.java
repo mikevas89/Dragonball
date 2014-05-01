@@ -46,8 +46,8 @@ public class PendingMonitor implements Runnable {
 				    }			    
 				    
 				    // check for the timeout!!
-				    Long curtime = System.currentTimeMillis();
-				    if(curtime - action.getTimestamp() > Constants.PENDING_TIMEOUT)
+				    Long curtime = System.nanoTime();
+				    if((curtime - action.getTimestamp()) > Constants.PENDING_TIMEOUT*Constants.NANO)
 				    {
 				    	System.out.println("Pending -> VALID action: " + action.toString());
 				    	try {

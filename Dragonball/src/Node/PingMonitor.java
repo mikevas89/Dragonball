@@ -36,17 +36,18 @@ public class PingMonitor implements Runnable{
 			for(Iterator<Entry<Node, ServerInfo>> it= Server.getServerList().entrySet().iterator();it.hasNext();){
 				Entry<Node, ServerInfo> entry = it.next();
 				
-			//	System.out.println("Ping Checking: CurrentTime:"+ System.currentTimeMillis() 
+			//	System.out.println("Ping Checking: CurrentTime:"+ System.nanoTime() 
 		//							+ " NodePing:"+ entry.getValue().getRemoteNodeTimeLastPingSent()+
-			//						" Difference:"+ (System.currentTimeMillis() - entry.getValue().getRemoteNodeTimeLastPingSent()) +
+			//						" Difference:"+ (System.nanoTime() - entry.getValue().getRemoteNodeTimeLastPingSent()) +
 				//					"2*PingPeriod:"+ 2* Constants.SERVER2SERVER_PING_PERIOD);
 				//regular communication
-				if((System.currentTimeMillis() - entry.getValue().getRemoteNodeTimeLastPingSent()) < (2* Constants.SERVER2SERVER_PING_PERIOD)){
+				if((System.nanoTime() - entry.getValue().getRemoteNodeTimeLastPingSent()) < (2* Constants.SERVER2SERVER_PING_PERIOD
+																										*Constants.NANO)){
 					System.out.println("No worries");
 					continue;
 				}
 				//broadcast "ProblematicServer" message to all servers except the problematic one 
-				if((System.currentTimeMillis() - entry.getValue().getRemoteNodeTimeLastPingSent()) < Constants.SERVER2SERVER_TIMEOUT && 
+				if((System.nanoTime() - entry.getValue().getRemoteNodeTimeLastPingSent()) < Constants.SERVER2SERVER_TIMEOUT && 
 																!entry.getValue().isProblematicServer()){
 					System.err.println("Problematic Server: "+ entry.getKey().getName());
 					Runnable pingMonitorSender=new PingMonitorSender(entry.getKey(),MessageType.ProblematicServer,
@@ -71,10 +72,10 @@ public class PingMonitor implements Runnable{
 			for(Iterator<Entry<Node, ClientPlayerInfo>> it= Server.getClientList().entrySet().iterator();it.hasNext();){
 				Entry<Node, ClientPlayerInfo> entry = it.next();
 				//regular communication 
-				if((System.currentTimeMillis() - entry.getValue().getTimeLastPingSent()) < Constants.CLIENT2SERVER_PING_PERIOD)
+				if((System.nanoTime() - entry.getValue().getTimeLastPingSent()) < Constants.CLIENT2SERVER_PING_PERIOD*Constants.NANO)
 					continue;
 				
-				if((System.currentTimeMillis() - entry.getValue().getTimeLastPingSent()) < (2* Constants.CLIENT2SERVER_PING_PERIOD) &&
+				if((System.nanoTime() - entry.getValue().getTimeLastPingSent()) < (2* Constants.CLIENT2SERVER_PING_PERIOD*Constants.NANO) &&
 						!entry.getValue().isServerHasSentPingForCheckingClient()){
 					
 					Runnable pingMonitorSender=new PingMonitorSender(entry.getKey(),MessageType.ServerClientPing,
@@ -82,18 +83,18 @@ public class PingMonitor implements Runnable{
 					new Thread(pingMonitorSender).start();
 					
 					entry.getValue().setServerHasSentPingForCheckingClient(true);
-					entry.getValue().setLastPingFromServer(System.currentTimeMillis());
+					entry.getValue().setLastPingFromServer(System.nanoTime());
 					entry.getValue().setRegularCommunicationFromClient(false);
 					it.remove();
 					Server.getClientList().put(entry.getKey(),entry.getValue());	
 					continue;
 				}
 				
-				if((System.currentTimeMillis() - entry.getValue().getTimeLastPingSent()) >= Constants.SERVER2CLIENT_TIMEOUT){
+				if((System.nanoTime() - entry.getValue().getTimeLastPingSent()) >= Constants.SERVER2CLIENT_TIMEOUT*Constants.NANO){
 					Unit clientUnit = Server.getBattlefield().getUnitByUnitID(entry.getValue().getUnitID());
 					System.out.println("Ping Monitor will unsubscribe client "+ entry.getKey().getName()+
-							"diff:"+(System.currentTimeMillis() - entry.getValue().getTimeLastPingSent())+
-							" timeout:"+Constants.SERVER2CLIENT_TIMEOUT);
+							" diff:"+(System.nanoTime() - entry.getValue().getTimeLastPingSent())+
+							" timeout:"+Constants.SERVER2CLIENT_TIMEOUT*Constants.NANO);
 					Runnable messageSender = new UnSubscribeMessageSender(Server.getPendingActions(),clientUnit);
 					new Thread(messageSender).start();
 					//logs the removal of the client- player
@@ -102,7 +103,7 @@ public class PingMonitor implements Runnable{
 														clientUnit.getUnitID(), 
 														clientUnit.getX(),clientUnit.getY(),
 														clientUnit.getType(clientUnit.getX(),clientUnit.getY()),
-														System.currentTimeMillis(), Server.getMyInfo().getName());
+														System.nanoTime(), Server.getMyInfo().getName());
 					Server.getValidActions().add(playerDown);
 					
 					Runnable validActionPlayerDownSender = new ValidActionSender(playerDown);

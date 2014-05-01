@@ -5,12 +5,8 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
-import messages.MessageType;
-import messages.ServerServerMessage;
-
 import structInfo.LogInfo;
 import structInfo.LogInfo.Action;
-import structInfo.ServerInfo;
 import structInfo.UnitType;
 import units.Dragon;
 import units.Player;
@@ -146,7 +142,7 @@ public class ValidMonitor implements Runnable{
 													targetUnit.getUnitID(), 
 													targetUnit.getX(),targetUnit.getY(),
 													targetUnit.getType(targetUnit.getX(),targetUnit.getY()),
-													System.currentTimeMillis(), Server.getMyInfo().getName());
+													System.nanoTime(), Server.getMyInfo().getName());
 				this.validActions.add(playerDown);
 				
 				Runnable validActionPlayerDownSender = new ValidActionSender(playerDown);

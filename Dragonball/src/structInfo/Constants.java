@@ -14,6 +14,7 @@ public class Constants {
 	public static final int SERVER_CLIENT_RMI_PORT=1100;
 	public static final int SERVER_SERVER_RMI_PORT=1099;
 	
+	public static final long NANO=1000000;
 	
 	//action periods for the players
 	public static final long PLAYER_PERIOD_ACTION= 12000;
@@ -45,18 +46,6 @@ public class Constants {
 	
 	//Server PingMonitor , it is calculated according to the smallest Timeout PingMonitor checks for Pings -> SERVER2SERVER_TIMEOUT
 	public static final long PING_MONITOR_CHECKING_PERIOD =  SERVER2SERVER_PING_PERIOD / 3; 
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	
 	
 }

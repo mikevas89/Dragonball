@@ -134,7 +134,7 @@ public class PingMonitorSender implements Runnable{
 									unit.getType(unit.getX(), unit.getY()),
 									unit.getUnitID(), unit.getX(), unit.getY(),
 									unit.getType(unit.getX(), unit.getY()),
-									System.currentTimeMillis(),
+									System.nanoTime(),
 									serverInfoForRemovedServer.getName());
 							try {
 								Server.getValidBlockQueue().put(playerDown);

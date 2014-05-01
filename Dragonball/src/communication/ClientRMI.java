@@ -42,7 +42,7 @@ public class ClientRMI extends UnicastRemoteObject implements ClientServer {
 			return;
 		
 		//issued time of Message in the Client
-		message.setTimeIssuedFromServer(System.currentTimeMillis());
+		message.setTimeIssuedFromServer(System.nanoTime());
 
 		Thread handlerMessage = new Thread(new Runnable() {
 

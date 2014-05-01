@@ -154,7 +154,7 @@ public class DragonMaster implements Runnable {
 						targetUnit.getX(),
 						targetUnit.getY(),
 						targetUnit.getType(targetUnit.getX(), targetUnit.getY()),
-						System.currentTimeMillis(), Server.getMyInfo()
+						System.nanoTime(), Server.getMyInfo()
 								.getName());
 				// put action to Queue
 				try {

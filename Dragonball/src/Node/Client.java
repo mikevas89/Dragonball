@@ -154,8 +154,8 @@ public class Client extends Node{
 				//server.setName(Client.getServerList().get(firstServer).getName());
 				//server.setIP(Client.getServerList().get(firstServer).getIP());
 				//put names for testing
-				server.setName("Server1");
-				server.setIP("127.0.0.1");
+				server.setName("Server2");
+				server.setIP("192.168.1.14");
 				
 				System.out.println(server.getIP());
 				
@@ -198,7 +198,7 @@ public class Client extends Node{
 						if(serverInfo ==null)
 							System.err.println("ServerInfo is null");
 							//no response from the connected Server
-							if(System.currentTimeMillis() - serverInfo.getRemoteNodeTimeLastPingSent() > 2* Constants.SERVER2CLIENT_TIMEOUT){
+							if(System.nanoTime() - serverInfo.getRemoteNodeTimeLastPingSent() > 2* Constants.SERVER2CLIENT_TIMEOUT){
 								client.serverTimeoutTimer.cancel();
 								client.running=false;
 							}
@@ -207,7 +207,7 @@ public class Client extends Node{
 						// Randomly choose one of the four wind directions to move to if there are no units present
 						direction = Directions.values()[ (int)(Directions.values().length * Math.random()) ];
 						adjacentUnitType = UnitType.undefined;
-
+						
 						Unit myUnit= client.getUnitFromBattleFieldList();
 						if(myUnit == null && client.running==true)
 						{
@@ -215,7 +215,7 @@ public class Client extends Node{
 							client.running=false;
 							continue;
 						}
-						
+						try{
 						switch (direction) {
 							case up:
 								if (myUnit.getY() <= 0)
@@ -272,7 +272,11 @@ public class Client extends Node{
 						} catch (RemoteException | NotBoundException e) {
 							e.printStackTrace();
 						}
-
+						
+					}catch(NullPointerException e){
+						client.running=false;
+						continue;
+					}
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -544,7 +548,7 @@ public class Client extends Node{
 	public void onSubscribeMessageReceived(ClientServerMessage message){
 		
 		if(message.getSender().equals(this.serverConnected.getName())){
-			System.out.println("C1 "+System.currentTimeMillis()+" Connection Established from the Server - Subscription Completed");
+			System.out.println("C1 "+System.nanoTime()+" Connection Established from the Server - Subscription Completed");
 			//content collection of the message contains the unique clientID
 			this.setUnitID(Integer.parseInt(message.getContent().get("unitID")));
 			System.out.println("Client: Received unitID "+ this.getUnitID());
@@ -558,7 +562,7 @@ public class Client extends Node{
 	
 	public void onBattleFieldMessageReceived(ClientServerMessage message){
 		if(message.getSender().equals(this.serverConnected.getName())){
-			System.out.println("C2 "+System.currentTimeMillis()+" BattleFiled updated from the Server ");
+			System.out.println("C2 "+System.nanoTime()+" BattleFiled updated from the Server ");
 			//update the battlefield of the subscribed client
 			this.recomputeBattleField(message.getBattlefield());
 			
@@ -576,7 +580,7 @@ public class Client extends Node{
 
 	public void onServerClientPingMessageReceived(ClientServerMessage message) {
 		if(message.getSender().equals(this.serverConnected.getName())){
-			System.out.println("C3 "+System.currentTimeMillis()+" onServerClientPingMessageReceived");
+			System.out.println("C3 "+System.nanoTime()+" onServerClientPingMessageReceived");
 			//send immediately to Server because the connection is at stake
 			new Thread(new Runnable(){
 				@Override
@@ -604,7 +608,7 @@ public class Client extends Node{
 
 	public void onUnSubscribeFromServerMessageReceived(ClientServerMessage message) {
 		if(message.getSender().equals(this.serverConnected.getName())){
-			System.out.println("C1 "+System.currentTimeMillis()+" Client: onUnSubscribeFromServerMessageReceived");
+			System.out.println("C1 "+System.nanoTime()+" Client: onUnSubscribeFromServerMessageReceived");
 			this.recomputeBattleField(message.getBattlefield());
 			this.running=false;	
 			serverTimeoutTimer.cancel();

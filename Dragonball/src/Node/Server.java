@@ -16,6 +16,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.UnknownHostException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
@@ -87,7 +88,7 @@ public class Server extends Node implements java.io.Serializable{
 
 	public int test=0;
 
-	public Server() throws IOException{
+	public Server(String serverName, String serverIP) throws IOException{
 		super();
 		lock = new Object();
 		serverList = new ConcurrentHashMap<Node, ServerInfo>();
@@ -96,44 +97,49 @@ public class Server extends Node implements java.io.Serializable{
 		ValidActions= new ArrayList<LogInfo>();   // list of valid actions
 		validBlockQueue = new LinkedBlockingQueue<>();
 		checkPoint = new CheckPoint(25,25);
-		int numServer= this.getUniqueIdForName("ServerID.txt");
+		//int numServer= this.getUniqueIdForName("ServerID.txt");
 		
 		//unique name of Client
-		this.setName("Server"+ String.valueOf(numServer));
-		this.setIP("127.0.0.1");
-		
+		this.setName(serverName);
+		this.setIP(serverIP);
 		
 		//set timers, sets a timer for sending the Ping to other Alive Servers
 		this.setServerServerTimeoutTimer(new Timer(true));
 		this.getServerServerTimeoutTimer().scheduleAtFixedRate(new SchedulingTimer(),0,Constants.SERVER2SERVER_PING_PERIOD); 
 
-		System.out.println("Server Name: "+ this.getName());
+		System.out.println("Server Name: "+ this.getName() + " ServerIP:"+ this.getIP());
 
 }
 
 	
 		
 
-	public static void main(String[] args) throws RemoteException, AlreadyBoundException, InterruptedException, ExecutionException {
+	public static void main(final String[] args) throws RemoteException, AlreadyBoundException, InterruptedException, ExecutionException {
 		
-		
+		try {
+			System.out.println(java.net.InetAddress.getLocalHost());
+		} catch (UnknownHostException e3) {
+			e3.printStackTrace();
+		}
+
 		
 		/*----------------------------------------------------
 				Creation of Server Thread
 		----------------------------------------------------		
 		*/
 		
+		
 		new Thread(new Runnable() {
 		    public void run() {
 		    	Server server = null;
 				try {
-					server = new Server();
+					server = new Server(args[1],args[2]);
 				} catch (IOException e2) {
 					e2.printStackTrace();
 				}
 				
 				
-				//Server RMI for Server Communication to port 1100
+				//Server RMI for Server Communication to port 1099
 				
 				Server2ServerRMI serverServerComm =null;
 				try {
@@ -147,7 +153,7 @@ public class Server extends Node implements java.io.Serializable{
 				
 				
 		 		
-		 		//Server RMI for Client communication to port 1099
+		 		//Server RMI for Client communication to port 1100
 		 		Server2ClientRMI serverClientComm = null;
 				try {
 					serverClientComm = new Server2ClientRMI(server);
@@ -285,8 +291,10 @@ public class Server extends Node implements java.io.Serializable{
 			System.out.println("bindInExistingServerServerRegistry completed");
 			return true;
 		} catch (RemoteException e) {
+			//e.printStackTrace();
 			return false;
 		} catch (AlreadyBoundException e) {
+			//e.printStackTrace();
 			return false;
 		}
 	}
@@ -328,8 +336,10 @@ public class Server extends Node implements java.io.Serializable{
 			System.out.println("bindInExistingServerClientRegistry completed");
 			return true;
 		} catch (RemoteException e) {
+			//e.printStackTrace();
 			return false;
 		} catch (AlreadyBoundException e) {
+			//e.printStackTrace();
 			return false;
 		}
 	}
@@ -392,7 +402,6 @@ public class Server extends Node implements java.io.Serializable{
 	public boolean startGame(){
 		
 		System.out.println("Server: "+ Server.getMyInfo().getName()+" entered startGame");
-		//TODO: send broadcast Subscribe2Server to Servers
 		for (ServerInfo serverInfo : Server.getServerList().values()) {
 
 			ServerServerMessage subscribeServerMessage = new ServerServerMessage(
@@ -412,9 +421,9 @@ public class Server extends Node implements java.io.Serializable{
 			try {
 				serverComm.onMessageReceived(subscribeServerMessage);
 			} catch (RemoteException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 			} catch (NotBoundException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 			}
 
 		}
@@ -659,7 +668,7 @@ public class Server extends Node implements java.io.Serializable{
 								unit.getType(unit.getX(), unit.getY()),
 								unit.getUnitID(), unit.getX(), unit.getY(),
 								unit.getType(unit.getX(), unit.getY()),
-								System.currentTimeMillis(), serverInfoForRemovedServer.getName());
+								System.nanoTime(), serverInfoForRemovedServer.getName());
 						try {
 							Server.getValidBlockQueue().put(playerDown);
 						} catch (InterruptedException e) {

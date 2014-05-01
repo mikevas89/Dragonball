@@ -51,11 +51,10 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		if(!(message instanceof ClientServerMessage)) return;
 		
 		//issued time of Message in the Server
-		message.setTimeIssuedFromServer(System.currentTimeMillis());
+		message.setTimeIssuedFromServer(System.nanoTime());
 		ClientServerMessage clientServerMessage= (ClientServerMessage) message;
 		
 		System.out.println("Server: Received Message");
-		//TODO: spawn a thread to handle the message
 		
 		switch(message.getMessageTypeRequest()){
 		case ClientServerPing : 
@@ -103,17 +102,17 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 	*/
 	
 	private void onClientServerPingMessageReceived(Message message) {
-		System.out.println("SC1 "+System.currentTimeMillis()+" onClientServerPingMessageReceived");
+		System.out.println("SC1 "+System.nanoTime()+" onClientServerPingMessageReceived");
 		Node client=new Node(message.getSender(),message.getSenderIP());
 		ClientPlayerInfo result = Server.getClientList().get(client);
 		if(result==null) return; //client is not player in my database
-		result.setTimeLastPingSent(System.currentTimeMillis());
+		result.setTimeLastPingSent(System.nanoTime());
 		Server.getClientList().replace(client, result);
 	}
 	
 	public void onSubscribe2ServerMessageReceived(Message message){
 		
-		System.out.println("SC2 "+System.currentTimeMillis()+" Server: onSubscribe2ServerMessageReceived");
+		System.out.println("SC2 "+System.nanoTime()+" Server: onSubscribe2ServerMessageReceived");
 		
 		Node client=new Node(message.getSender(),message.getSenderIP());
 		//checking if client is already subscribed
@@ -168,7 +167,8 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 			}
 
 		}
-		else{
+		else{  //current server runs the game and serves the client
+			////first makes a load balance to the clients that can be connected to the server  
 			if(Server.getMyInfo().getNumClients() >=Constants.MAX_CLIENTS_PER_SERVER){
 				Node serverToConnect = null;
 				ServerInfo serverInfoMinClients = new ServerInfo("","",-1,true);
@@ -227,11 +227,6 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		}
 		
 		
-		//put new Client to the clientList
-		ClientPlayerInfo newClient = new ClientPlayerInfo(client.getName(), client.getIP(),newUnitID);
-		this.serverOwner.putToClientList(newClient);
-		//update number of clients
-		Server.getMyInfo().setNumClients(Server.getClientList().size());
 		
 		//broadcast to Servers the New Player Subscription
 		for(ServerInfo serverInfo: Server.getServerList().values()){
@@ -265,8 +260,16 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 			
 			 System.out.println("Server: sendCreatePlayer sent to Server"+ serverInfo.getName()+ "serverIP: "+ serverInfo.getIP());
 		}
-
 		
+		
+		//put new Client to the clientList
+		ClientPlayerInfo newClient = new ClientPlayerInfo(client.getName(), client.getIP(),newUnitID);
+		//update timestamp info
+		newClient.setLastPingFromServer(System.nanoTime());
+		this.serverOwner.putToClientList(newClient);
+		//update number of clients
+		Server.getMyInfo().setNumClients(Server.getClientList().size());
+
 		
 			//With this message, Server sends the OK subscription to the client
 		 ClientServerMessage sendSubscribed = new ClientServerMessage(
@@ -296,16 +299,15 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 	
 	private void onUnSubscribeFromServerMessageReceived(ClientServerMessage message) {
 		Node client=new Node(message.getSender(),message.getSenderIP());
-		System.out.println("SC3 "+System.currentTimeMillis()+" MESSAGE");
+		System.out.println("SC3 "+System.nanoTime()+" MESSAGE");
 		if(!Server.getClientList().containsKey(client)){
 			System.err.println("Unknown Client: "+ message.getSender() +" tries to unsubscribe");
 			return;
 		}
-		//TODO put "Remove new Player" to the Queue sharing with MP so the Master Player can see it
 	}
 	
 	private void onActionMessageReceived(ClientServerMessage message) {
-		System.out.println("SC4 "+System.currentTimeMillis()+" Server: onActionMessageReceived");
+		System.out.println("SC4 "+System.nanoTime()+" Server: onActionMessageReceived");
 		//Node client=new Node(message.getSender(),message.getSenderIP());
 
 		int senderUnitID=Integer.parseInt(message.getContent().get("UnitID"));
@@ -394,7 +396,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 																NotBoundException, MalformedURLException {
 		Node client=new Node(message.getSender(),message.getSenderIP());
 		ClientPlayerInfo player= Server.getClientList().get((client));
-		System.out.println("SC5 "+System.currentTimeMillis()+" MESSAGE");
+		System.out.println("SC5 "+System.nanoTime()+" MESSAGE");
 		if(player==null){
 			System.err.println("Unknown Client: "+ message.getSender() +" tries to get Battlefield");
 			return;
