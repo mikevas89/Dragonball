@@ -383,9 +383,8 @@ public class Server extends Node implements java.io.Serializable{
 	public static void checkIfUnitIsDead(LogInfo action){
 		//only if the unit belongs to this server
 		Unit targetUnit= Server.getBattlefield().getUnitByUnitID(action.getTargetUnitID());
-		
 		//only if the unit belongs to this server
-		if(targetUnit.getServerOwnerID()!=Server.getMyInfo().getServerID())
+		if(targetUnit==null || targetUnit.getServerOwnerID()!=Server.getMyInfo().getServerID())
 			return;
 		if(((targetUnit instanceof Player) || (targetUnit instanceof Dragon)) && (targetUnit.getHitPoints()<=0)){
 			System.err.println("Checker went to unsubscribed");
@@ -689,6 +688,7 @@ public class Server extends Node implements java.io.Serializable{
 						serverInfoForRemovedServer.getServerID() == Server.getMyInfo().getServerID()-1){
 					Server.setRunDragons(true);
 					Server.getMyInfo().setRunsDragons(true);
+					System.err.println(Server.getMyInfo()+" HANDLES DRAGONS");
 					//change serverOwnerID of dragons
 					synchronized (Server.lock) {
 						Iterator<Unit> it = Server.getBattlefield().getUnits().listIterator();
@@ -696,6 +696,8 @@ public class Server extends Node implements java.io.Serializable{
 							Unit unit = it.next();
 							if(unit instanceof Dragon) {
 								unit.setServerOwnerID(Server.getMyInfo().getServerID());
+								unit.setUnitID( Integer.parseInt(String.valueOf(Server.getMyInfo().getServerID())+
+															String.valueOf(unit.getUnitID())));
 							}
 						}
 					}
