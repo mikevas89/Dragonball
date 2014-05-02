@@ -134,7 +134,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 	}
 
 	private void onRequestBattlefieldMessageReceived(ServerServerMessage message) {
-		System.out.println("SS8 "+System.nanoTime()+" onRequestBattlefieldMessageReceived");
+		System.out.println("SS8 "+System.nanoTime());
 		Node serverSender=new Node(message.getSender(),message.getSenderIP());
 		ServerInfo serverInfo= Server.getServerList().get(serverSender);
 
@@ -163,7 +163,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 	}
 
 	private void onGetBattlefieldMessageReceived(ServerServerMessage message) {
-		System.out.println("SS9 "+System.nanoTime()+" onGetBattlefieldMessageReceived");
+		System.out.println("SS9 "+System.nanoTime());
 		
 		System.out.println("BattleFieled updated from the Server "+ message.getSender()+" to Server "+ message.getReceiver());
 		//update the battlefield of the subscribed client
@@ -237,7 +237,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		int playerServerOwnerID = Integer.valueOf(message.getContent().get("serverOwnerID"));
 		//create player to battlefield from other Server
 		Player newPlayer = new Player(playerX, playerY,Server.getBattlefield(), playerUnitID,playerServerOwnerID);
-		System.out.println("SS15 onNewPlayerMessageReceived");
+		System.out.println("SS15 "+System.nanoTime());
 	}
 	
 	
@@ -349,7 +349,8 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		}
 		long responseTime = System.nanoTime() - message.getTimeIssuedFromServer();
 		long responseTimeFromOtherServer = Long.parseLong(message.getContent().get("responseTime"));
-		System.out.println("SS4 "+responseTime+responseTimeFromOtherServer+" "+totalNumClients );
+		System.out.println("SS4 "+System.nanoTime());
+		//System.out.println("SS4 "+responseTime+responseTimeFromOtherServer+" "+totalNumClients );
 	}
 
 	private void onNewCheckPointMessageReceived(ServerServerMessage message) {
@@ -399,7 +400,7 @@ public class Server2ServerRMI extends UnicastRemoteObject implements ServerServe
 		//broadcast node's decision
 		new Thread(pingMonitorSender).start();
 		
-		System.out.println("SS5 "+System.nanoTime()+" MESSAGE" );
+		System.out.println("SS5 "+System.nanoTime() );
 
 		if(serverInfo.getTotalNumAnswersAggreement() >= (Server.getNumAliveServers() - Server.getNumProblematicServers())){
 			//ready to decide

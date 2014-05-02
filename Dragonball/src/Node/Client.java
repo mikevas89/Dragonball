@@ -63,7 +63,7 @@ public class Client extends Node{
 		int numClient = this.getUniqueIdForName("Clientid.txt");
 		//unique name of Client
 		this.setName("Client"+ String.valueOf(numClient));
-		this.setIP("192.168.1.14");
+		this.setIP("192.168.1.5");
 		System.out.println("Client Name: "+ this.getName());
 		this.isSubscribed=false;
 		
@@ -132,8 +132,8 @@ public class Client extends Node{
 				//server.setName(Client.getServerList().get(firstServer).getName());
 				//server.setIP(Client.getServerList().get(firstServer).getIP());
 				//put names for testing
-				server.setName("Server2");
-				server.setIP("192.168.1.14");
+				server.setName("Server1");
+				server.setIP("192.168.1.5");
 				
 				System.out.println(server.getIP());
 				

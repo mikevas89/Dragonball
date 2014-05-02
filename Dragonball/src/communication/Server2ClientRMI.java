@@ -303,14 +303,14 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 			//e.printStackTrace();
 		}
 		
-		System.out.println("SC2 "+System.nanoTime()+" Server: onSubscribe2ServerMessageReceived");
+		System.out.println("SC2 "+System.nanoTime());
 		System.out.println("Server: ACK sent to Client"+ client.getName()+ "unitID: "+ newClient.getUnitID());
 		 
 	}
 	
 	private void onUnSubscribeFromServerMessageReceived(ClientServerMessage message) {
 		Node client=new Node(message.getSender(),message.getSenderIP());
-		System.out.println("SC3 "+System.nanoTime()+" MESSAGE");
+		System.out.println("SC3 "+System.nanoTime());
 		if(!Server.getClientList().containsKey(client)){
 			System.err.println("Unknown Client: "+ message.getSender() +" tries to unsubscribe");
 			return;
@@ -318,7 +318,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 	}
 	
 	private void onActionMessageReceived(ClientServerMessage message) {
-		System.out.println("SC4 "+System.nanoTime()+" Server: onActionMessageReceived");
+		System.out.println("SC4 "+System.nanoTime());
 		//Node client=new Node(message.getSender(),message.getSenderIP());
 
 		int senderUnitID=Integer.parseInt(message.getContent().get("UnitID"));
@@ -332,7 +332,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 			return;
 		}
 		
-		System.out.println("Server: onActionMessageReceived - Checking the targetType");
+		//System.out.println("Server: onActionMessageReceived - Checking the targetType");
 		// Get what unit lies in the target square
 		Unit targetUnit = Server.getBattlefield().getUnit(targetX, targetY);
 		UnitType targetType;
@@ -358,14 +358,14 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 				action=Action.Damage;
 				break;
 		}
-		System.out.println("Server: onActionMessageReceived - targetType is "+ action);
+		//System.out.println("Server: onActionMessageReceived - targetType is "+ action);
 		//new pending move
 		LogInfo newPendingAction = new LogInfo(action, senderUnitID, senderUnit.getX(),senderUnit.getY(),
 												senderUnit.getType(senderUnit.getX(),senderUnit.getY()),
 												targetUnitID, 
 												targetX, targetY, targetType,
 												message.getTimeIssuedFromServer(), Server.getMyInfo().getName());
-		System.out.println("New Action : "+ newPendingAction.toString());
+		//System.out.println("New Action : "+ newPendingAction.toString());
 		
 		//add action as pending move 
 		Server.getPendingActions().put(String.valueOf(targetX)+" "+String.valueOf(targetY), newPendingAction);
@@ -389,7 +389,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 			
 			if(serverComm == null) continue;
 			
-			System.out.println("Server: "+ Server.getMyInfo().getName() + " sends CheckPending to "+ serverInfo.getName());
+			//System.out.println("Server: "+ Server.getMyInfo().getName() + " sends CheckPending to "+ serverInfo.getName());
 
 			try {
 				serverComm.onMessageReceived(checkPendingMessage);
@@ -407,7 +407,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 																NotBoundException, MalformedURLException {
 		Node client=new Node(message.getSender(),message.getSenderIP());
 		ClientPlayerInfo player= Server.getClientList().get((client));
-		System.out.println("SC5 "+System.nanoTime()+" MESSAGE");
+		System.out.println("SC5 "+System.nanoTime());
 		if(player==null){
 			System.err.println("Unknown Client: "+ message.getSender() +" tries to get Battlefield");
 			return;
