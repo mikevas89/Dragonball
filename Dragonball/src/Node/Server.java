@@ -440,7 +440,7 @@ public class Server extends Node implements java.io.Serializable{
 		}
 		//timeout reached
 		//System.out.println("startGame : PrintList");
-		this.printlist();
+		Server.printlist();
 		
 		for (ServerInfo serverInfo : Server.getServerList().values()) {
 			if(serverInfo.isAlive())

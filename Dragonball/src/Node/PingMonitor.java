@@ -76,7 +76,7 @@ public class PingMonitor implements Runnable{
 				if((currentTime - entry.getValue().getTimeLastPingSent()) < Constants.CLIENT2SERVER_PING_PERIOD*Constants.NANO)
 					continue;
 				
-				if((currentTime - entry.getValue().getTimeLastPingSent()) < (2* Constants.CLIENT2SERVER_PING_PERIOD*Constants.NANO) &&
+			/*	if((currentTime - entry.getValue().getTimeLastPingSent()) < (2* Constants.CLIENT2SERVER_PING_PERIOD*Constants.NANO) &&
 						!entry.getValue().isServerHasSentPingForCheckingClient()){
 					
 					Runnable pingMonitorSender=new PingMonitorSender(entry.getKey(),MessageType.ServerClientPing,
@@ -89,7 +89,7 @@ public class PingMonitor implements Runnable{
 					it.remove();
 					Server.getClientList().put(entry.getKey(),entry.getValue());	
 					continue;
-				}
+				}*/
 				
 				if((currentTime - entry.getValue().getTimeLastPingSent()) >= Constants.SERVER2CLIENT_TIMEOUT*Constants.NANO){
 					Unit clientUnit = Server.getBattlefield().getUnitByUnitID(entry.getValue().getUnitID());
