@@ -39,7 +39,7 @@ public class UnSubscribeMessageSender implements Runnable{
 			Map.Entry<String, LogInfo> entry = it.next();
 			if(entry.getValue().getSenderUnitID()==unit.getUnitID() ||
 					entry.getValue().getTargetUnitID()==unit.getUnitID()){
-				System.err.println("UnSubscribe: Remove pending Actions(Good thing):"+ entry.getValue().toString());
+				//System.err.println("UnSubscribe: Remove pending Actions(Good thing):"+ entry.getValue().toString());
 				it.remove();
 			}
 		}
@@ -48,7 +48,7 @@ public class UnSubscribeMessageSender implements Runnable{
 			LogInfo entry = it.next();
 			if((entry.getSenderUnitID()==unit.getUnitID() ||
 					entry.getTargetUnitID()==unit.getUnitID()) && !entry.getAction().equals(Action.Removed)){
-				System.err.println("UnSubscribe: Remove ToValid Actions(Good thing):"+ entry.toString());
+				//System.err.println("UnSubscribe: Remove ToValid Actions(Good thing):"+ entry.toString());
 				it.remove();
 			}
 		}
@@ -94,7 +94,7 @@ public class UnSubscribeMessageSender implements Runnable{
 	
 	
 	//clientIp and clientName
-	System.out.println("Getting Registry from "+ client.getName()+" for Unsubscribe");
+	//System.out.println("Getting Registry from "+ client.getName()+" for Unsubscribe");
 		
 
 		if(clientCommunication==null)

@@ -91,9 +91,9 @@ public class Server extends Node implements java.io.Serializable{
 	public Server(String serverName, String serverIP) throws IOException{
 		super();
 		lock = new Object();
-		serverList = new ConcurrentHashMap<Node, ServerInfo>();
-		clientList= new ConcurrentHashMap<Node, ClientPlayerInfo>(); //list of clients connected to that server
-		PendingActions= Collections.synchronizedMap(new HashMap<String, LogInfo>());   // list of pending action
+		serverList = new ConcurrentHashMap<Node, ServerInfo>(16,0.9f,20);
+		clientList= new ConcurrentHashMap<Node, ClientPlayerInfo>(16,0.9f,20); //list of clients connected to that server
+		PendingActions= new ConcurrentHashMap<String, LogInfo>(16,0.9f,20);   // list of pending action
 		ValidActions= new ArrayList<LogInfo>();   // list of valid actions
 		validBlockQueue = new LinkedBlockingQueue<>();
 		checkPoint = new CheckPoint(25,25);

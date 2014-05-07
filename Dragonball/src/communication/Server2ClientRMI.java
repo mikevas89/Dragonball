@@ -256,7 +256,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 			 sendCreatePlayer.setContent("unitID", String.valueOf(newPlayer.getUnitID()));
 			 sendCreatePlayer.setContent("serverOwnerID", String.valueOf(newPlayer.getServerOwnerID()));
 			 
-			//sending the PendingInvalid message to subscribed client
+			//sending the sendCreatePlayer message to subscribed client
 			 ServerServer serverRMI=null;
 			 serverRMI = Server.getServerReg(new Node(serverInfo.getName(),serverInfo.getIP()));
 			 
@@ -265,7 +265,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 			 try {
 				 serverRMI.onMessageReceived(sendCreatePlayer);
 			 } catch (RemoteException | NotBoundException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 			 }
 			
 			 System.out.println("Server: sendCreatePlayer sent to Server"+ serverInfo.getName()+ "serverIP: "+ serverInfo.getIP());
@@ -328,7 +328,6 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 		
 		Unit senderUnit = Server.getBattlefield().getUnitByUnitID(senderUnitID);
 		if(senderUnit==null){
-			System.err.println("Server: Action from not Client, invalid unitID="+ senderUnitID);
 			return;
 		}
 		

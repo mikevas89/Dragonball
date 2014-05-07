@@ -42,7 +42,7 @@ public class Constants {
 	public static final long SERVER2CLIENT_TIMEOUT = 20* CLIENT2SERVER_PING_PERIOD;
 	public static final long SERVER2SERVER_TIMEOUT = 6* SERVER2SERVER_PING_PERIOD;
 	
-	public static final long SERVER_CHECKPOINT_PERIOD = 3000;
+	public static final long SERVER_CHECKPOINT_PERIOD = CLIENT2SERVER_PING_PERIOD + SERVER2SERVER_PING_PERIOD;
 	
 	//Server PingMonitor , it is calculated according to the smallest Timeout PingMonitor checks for Pings -> SERVER2SERVER_TIMEOUT
 	public static final long PING_MONITOR_CHECKING_PERIOD =  SERVER2SERVER_PING_PERIOD / 3; 

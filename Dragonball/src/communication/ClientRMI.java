@@ -20,11 +20,6 @@ public class ClientRMI extends UnicastRemoteObject implements ClientServer {
 	
 	private static final long serialVersionUID = 1L;
 
-	
-	//TODO: List of all connected clients to serverNode: private clientList
-	
-	//private static List<List<String>>clientList;
-	//TODO: serverId	
 
 	private static Client clientOwner;
 
