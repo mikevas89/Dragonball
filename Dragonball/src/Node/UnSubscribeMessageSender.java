@@ -116,11 +116,13 @@ public class UnSubscribeMessageSender implements Runnable{
 		//if clients of the server are equal to zero
 		if(!Server.getMyInfo().isRunsDragons()){
 			Server.getMyInfo().setRunsGame(false);
+			Server.getBattlefield().clearBattleField();
 			Server.getPendingActions().clear();
 			Server.getValidBlockQueue().clear();
 		}
 		else{ //server runs dragons and so still plays the game
 			Server.getPendingActions().clear();
+			Server.getValidBlockQueue().clear();
 		}
 		
 		

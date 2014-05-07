@@ -40,7 +40,7 @@ import messages.MessageType;
 public class Client extends Node{
 
 	
-	private Node serverConnected; //server whom Client is connected
+	private static Node serverConnected; //server whom Client is connected
 	private boolean isSubscribed; //if client is subscribed to a server
 	
 	
@@ -63,7 +63,7 @@ public class Client extends Node{
 		int numClient = this.getUniqueIdForName("Clientid.txt");
 		//unique name of Client
 		this.setName("Client"+ String.valueOf(numClient));
-		this.setIP("127.0.0.1");
+		this.setIP("192.168.1.14");
 		System.out.println("Client Name: "+ this.getName());
 		this.isSubscribed=false;
 		
@@ -132,8 +132,8 @@ public class Client extends Node{
 				//server.setName(Client.getServerList().get(firstServer).getName());
 				//server.setIP(Client.getServerList().get(firstServer).getIP());
 				//put names for testing
-				server.setName("Server1");
-				server.setIP("127.0.0.1");
+				server.setName("Server2");
+				server.setIP("192.168.1.14");
 				
 				System.out.println(server.getIP());
 				
@@ -143,7 +143,7 @@ public class Client extends Node{
 				serverComm = Client.getServerReg(server);
 
 				 //mentions to which server is connected
-				client.setServerConnected(server); 
+				Client.setServerConnected(server); 
 
 				Client.printlist();
 				
@@ -172,8 +172,8 @@ public class Client extends Node{
 				//		Client.printlist();
 						
 						Thread.sleep(Constants.PLAYER_PERIOD_ACTION);
-						System.out.println("Connected serverName:"+ client.getServerConnected().getName());
-						ServerInfo serverInfo = Client.getServerList().get(client.getServerConnected());
+						System.out.println("Connected serverName:"+ Client.getServerConnected().getName());
+						ServerInfo serverInfo = Client.getServerList().get(Client.getServerConnected());
 						if(serverInfo ==null)
 							System.err.println("ServerInfo is null");
 							//no response from the connected Server
@@ -182,6 +182,7 @@ public class Client extends Node{
 							System.err.println("Client Removes Server due to Ping");
 							client.serverTimeoutTimer.cancel();
 							client.running=false;
+							continue;
 						}
 						
 						Unit neighbors[] = new Unit[4];
@@ -294,12 +295,16 @@ public class Client extends Node{
 						prevY=targetY;
 						ClientServerMessage actionMessage = new ClientServerMessage(
 								MessageType.Action, client.getName(),
-								client.getIP(), server.getName(), server
+								client.getIP(), Client.getServerConnected().getName(), Client.getServerConnected()
 										.getIP());
 						actionMessage.setContent("UnitID", String.valueOf(client.getUnitID()));
 						actionMessage.setContent("x", String.valueOf(targetX));
 						actionMessage.setContent("y", String.valueOf(targetY));
 
+						serverComm = Client.getServerReg(Client.getServerConnected());
+						
+						if(serverComm==null)
+							continue;
 
 						try {
 							serverComm.onMessageReceived(actionMessage);
@@ -490,11 +495,11 @@ public class Client extends Node{
 											MessageType.ClientServerPing,
 											this.getName(),
 											this.getIP(),
-											this.serverConnected.getName(),
-											this.serverConnected.getIP());
+											Client.serverConnected.getName(),
+											Client.serverConnected.getIP());
 		//send the subscription message to the server
 		ClientServer serverComm = null;
-		serverComm = Client.getServerReg(this.serverConnected);
+		serverComm = Client.getServerReg(Client.serverConnected);
 		//System.out.println("Client sends Ping");
 
 		try {
@@ -511,11 +516,11 @@ public class Client extends Node{
 												MessageType.Subscribe2Server,
 												this.getName(),
 												this.getIP(),
-												this.serverConnected.getName(),
-												this.serverConnected.getIP());
+												Client.serverConnected.getName(),
+												Client.serverConnected.getIP());
 		
 		//send the subscription message to the server
-		ClientServer serverComm= this.getServerReg(this.serverConnected);
+		ClientServer serverComm= Client.getServerReg(Client.serverConnected);
 		serverComm.onMessageReceived(subscribeMessage);
 	}
 	
@@ -525,13 +530,13 @@ public class Client extends Node{
 												MessageType.UnSubscribeFromServer,
 												this.getName(),
 												this.getIP(),
-												this.serverConnected.getName(),
-												this.serverConnected.getIP());
+												Client.serverConnected.getName(),
+												Client.serverConnected.getIP());
 		unSubscribeMessage.setContent("unitID", String.valueOf(this.getUnitID()));
 		//client unsubscribes himself
 		this.isSubscribed=false;
 		//send the subscription message to the server
-		ClientServer serverComm= this.getServerReg(this.serverConnected);
+		ClientServer serverComm= Client.getServerReg(Client.serverConnected);
 		serverComm.onMessageReceived(unSubscribeMessage);
 		
 	}
@@ -544,12 +549,12 @@ public class Client extends Node{
 												MessageType.Action,
 												this.getName(),
 												this.getIP(),
-												this.serverConnected.getName(),
-												this.serverConnected.getIP());
+												Client.serverConnected.getName(),
+												Client.serverConnected.getIP());
 		moveUnitMessage.setMessageUnit(unit);
 		
 		//send the subscription message to the server
-		ClientServer serverComm= this.getServerReg(this.serverConnected);
+		ClientServer serverComm= Client.getServerReg(Client.serverConnected);
 		serverComm.onMessageReceived(moveUnitMessage);
 	}
 	
@@ -560,13 +565,13 @@ public class Client extends Node{
 													MessageType.GetBattlefield,
 													this.getName(),
 													this.getIP(),
-													this.serverConnected.getName(),
-													this.serverConnected.getIP());
+													Client.serverConnected.getName(),
+													Client.serverConnected.getIP());
 
 		getBattlefieldMessage.setContent("unitID", String.valueOf(this.getUnitID()));
 		
 		//send the subscription message to the server
-		ClientServer serverComm= this.getServerReg(this.serverConnected);
+		ClientServer serverComm= Client.getServerReg(Client.serverConnected);
 		serverComm.onMessageReceived(getBattlefieldMessage);	
 	}
 	
@@ -579,7 +584,7 @@ public class Client extends Node{
 	//after the Ack of the subscribe message, the server sends the updates of the battlefield
 	public void onSubscribeMessageReceived(ClientServerMessage message){
 		
-		if(message.getSender().equals(this.serverConnected.getName())){
+		if(message.getSender().equals(Client.serverConnected.getName())){
 			System.out.println("C1 "+System.nanoTime()+" Connection Established from the Server - Subscription Completed");
 			//content collection of the message contains the unique clientID
 			this.setUnitID(Integer.parseInt(message.getContent().get("unitID")));
@@ -593,7 +598,7 @@ public class Client extends Node{
 	}
 	
 	public void onBattleFieldMessageReceived(ClientServerMessage message){
-		if(message.getSender().equals(this.serverConnected.getName())){
+		if(message.getSender().equals(Client.serverConnected.getName())){
 			System.out.println("C2 "+System.nanoTime());
 			//System.out.println(" BattleField updated from the Server ");
 			//update the battlefield of the subscribed client
@@ -601,18 +606,18 @@ public class Client extends Node{
 			
 			//update ping timestamp from server 
 			for(ServerInfo serverInfo: Client.getServerList().values()){
-				if(!serverInfo.getName().equals(this.serverConnected.getName()))
+				if(!serverInfo.getName().equals(Client.serverConnected.getName()))
 					continue;
 				//change the timestamp of the last ping from server
 				serverInfo.setRemoteNodeTimeLastPingSent(message.getTimeIssuedFromServer());
-				Client.getServerList().replace(new Node(this.serverConnected.getName(), this.serverConnected.getIP()),serverInfo);
+				Client.getServerList().replace(new Node(Client.serverConnected.getName(), Client.serverConnected.getIP()),serverInfo);
 			}	
 		}
 	}
 	
 
 	public void onServerClientPingMessageReceived(ClientServerMessage message) {
-		if(message.getSender().equals(this.serverConnected.getName())){
+		if(message.getSender().equals(Client.serverConnected.getName())){
 			System.out.println("C3 "+System.nanoTime());
 			System.out.println(" onServerClientPingMessageReceived");
 			//send immediately to Server because the connection is at stake
@@ -629,11 +634,11 @@ public class Client extends Node{
 			}).start();
 			//update ping timestamp from server 
 			for(ServerInfo serverInfo: Client.getServerList().values()){
-				if(!serverInfo.getName().equals(this.serverConnected.getName()))
+				if(!serverInfo.getName().equals(Client.serverConnected.getName()))
 					continue;
 				//change the timestamp of the last ping from server
 				serverInfo.setRemoteNodeTimeLastPingSent(message.getTimeIssuedFromServer());
-				Client.getServerList().replace(new Node(this.serverConnected.getName(), this.serverConnected.getIP()),serverInfo);
+				Client.getServerList().replace(new Node(Client.serverConnected.getName(), Client.serverConnected.getIP()),serverInfo);
 			}	
 		}
 		
@@ -641,7 +646,7 @@ public class Client extends Node{
 	
 
 	public void onUnSubscribeFromServerMessageReceived(ClientServerMessage message) {
-		if(message.getSender().equals(this.serverConnected.getName())){
+		if(message.getSender().equals(Client.serverConnected.getName())){
 			System.out.println("C1 "+System.nanoTime()+" Client: onUnSubscribeFromServerMessageReceived");
 			//this.recomputeBattleField(message.getBattlefield());
 			this.running=false;	
@@ -651,13 +656,13 @@ public class Client extends Node{
 	}
 	
 	public void onRedirectServerMessageReceived(ClientServerMessage message){
-		if(message.getSender().equals(this.serverConnected.getName())){
-			this.serverConnected.setName(message.getContent().get("Name"));
-			this.serverConnected.setIP(message.getContent().get("IP"));
+		if(message.getSender().equals(Client.serverConnected.getName())){
+			Client.serverConnected.setName(message.getContent().get("Name"));
+			Client.serverConnected.setIP(message.getContent().get("IP"));
 			
 			//setup connection to server registry
 			ClientServer serverComm;
-			serverComm = Client.getServerReg(this.serverConnected);
+			serverComm = Client.getServerReg(Client.serverConnected);
 
 			ClientServerMessage subscribeMessage= new ClientServerMessage(
 											MessageType.Subscribe2Server,
@@ -748,12 +753,12 @@ public class Client extends Node{
 		Client.battlefield=battlefield;
 	}
 	
-	public Node getServerConnected() {
+	public static Node getServerConnected() {
 		return serverConnected;
 	}
 
-	public void setServerConnected(Node serverConnected) {
-		this.serverConnected = serverConnected;
+	public static void setServerConnected(Node serverConnected) {
+		Client.serverConnected = serverConnected;
 	}
 
 

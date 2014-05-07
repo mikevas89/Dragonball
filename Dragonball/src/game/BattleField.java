@@ -278,6 +278,11 @@ public class BattleField  implements java.io.Serializable{
 		battlefield.copyMap(parameterBattleField.getMap());
 	}
 	
+	public void clearBattleField(){
+		battlefield.units.clear();
+		battlefield.copyMap(new Unit[MAP_WIDTH][MAP_HEIGHT]);
+	}
+	
 	
 	
 }

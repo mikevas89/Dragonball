@@ -218,7 +218,7 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 					//e.printStackTrace();
 				}
 				
-				System.out.println("Server: Redirection sent to Client"+ client.getName()+ " to Server "+ serverToConnect.getName());	
+				System.err.println("Server: Redirection sent to Client"+ client.getName()+ " to Server "+ serverToConnect.getName());	
 				return;
 			}	
 		}
@@ -319,7 +319,10 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 	
 	private void onActionMessageReceived(ClientServerMessage message) {
 		System.out.println("SC4 "+System.nanoTime());
-		//Node client=new Node(message.getSender(),message.getSenderIP());
+		Node client=new Node(message.getSender(),message.getSenderIP());
+		
+		if(!Server.getClientList().containsKey(client))
+				return;
 
 		int senderUnitID=Integer.parseInt(message.getContent().get("UnitID"));
 		int targetX=Integer.parseInt(message.getContent().get("x"));
@@ -388,7 +391,8 @@ public class Server2ClientRMI extends UnicastRemoteObject implements ClientServe
 			
 			if(serverComm == null) continue;
 			
-			//System.out.println("Server: "+ Server.getMyInfo().getName() + " sends CheckPending to "+ serverInfo.getName());
+			System.out.println("Server: "+ Server.getMyInfo().getName() + " sends CheckPending to "+ serverInfo.getName()+
+								" action from client:"+ client.getName());
 
 			try {
 				serverComm.onMessageReceived(checkPendingMessage);
